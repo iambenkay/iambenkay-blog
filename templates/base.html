@@ -23,8 +23,10 @@
       </div>
     </div>
   </div>
+  <script src=""></script>
   <script type="module">
   // Import the functions you need from the SDKs you need
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.15.0/+esm'
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
   // TODO: Add SDKs for Firebase products that you want to use
@@ -47,6 +49,7 @@
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
   }
+  mermaid.initialize({ startOnLoad: true });
 </script>
 </body>
 </html>

@@ -1,5 +1,4 @@
 #blog-body {
-
     h1,
     h2,
     h3,
@@ -51,5 +50,9 @@
         color: red;
         padding: 2px 4px;
         background: rgba(255, 0, 0, 0.1);
+    }
+
+    a {
+        text-decoration: underline;
     }
 }

@@ -1,56 +1,73 @@
-{% extends "base.html" %}
-{% block head %}
-    <title>{{ page.title }}</title>
-    <meta property="og:title" content="{{ page.title }}">
-    <meta property="og:description" content="{{ page.description }}">
-    <meta property="og:image" content="{{ page.extra.header_img }}">
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="{{ page.permalink }}">
-    <meta property="article:published_time" content="{{ page.date }}">
-    <meta property="article:section" content="{{ page.extra.section }}">
-    {% for tag in page.extra.tags %}
-        <meta property="article:tag" content="{{ tag }}">
-    {% endfor %}
-{% endblock head %}
-{%block content %}
-<h1 class="mt-10 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">{{ page.title }}</h1>
+{% extends "base.html" %} {% block head %}
+<title>{{ page.title }}</title>
+<meta property="og:title" content="{{ page.title }}" />
+<meta property="og:description" content="{{ page.description }}" />
+<meta property="og:image" content="{{ page.extra.header_img }}" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="{{ page.permalink }}" />
+<meta property="article:published_time" content="{{ page.date }}" />
+<meta property="article:section" content="{{ page.extra.section }}" />
+{% for tag in page.extra.tags %}
+<meta property="article:tag" content="{{ tag }}" />
+{% endfor %} {% endblock head %} {%block content %}
+<h1
+    class="mt-10 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900"
+>
+    {{ page.title }}
+</h1>
 <p class="text-slate-500 mt-3">{{ page.date | date(format="%B %d, %Y") }}</p>
-{% set image = resize_image(path=page.extra.header_img, width=1000, height=540) %}
-<img loading="lazy" src="{{ image.url }}" alt="{{page.extra.header_alt}}" class="mt-5 rounded w-full">
+{% set image = resize_image(path=page.extra.header_img, width=1000, height=540)
+%}
+<img
+    loading="lazy"
+    src="{{ image.url }}"
+    alt="{{page.extra.header_alt}}"
+    class="mt-5 rounded w-full"
+/>
 <div id="blog-body" class="markdown my-10">{{ page.content | safe }}</div>
-<script src="https://utteranc.es/client.js"
-        repo="iambenkay/iambenkay.github.io"
-        issue-term="pathname"
-        theme="github-light"
-        crossorigin="anonymous"
-        async>
-</script>
+<script
+    src="https://utteranc.es/client.js"
+    repo="iambenkay/iambenkay.github.io"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async
+></script>
 <script>
     function loadCopyButtons() {
         const codeBlocks = document.querySelectorAll("pre");
 
-        codeBlocks.forEach(block => {
+        codeBlocks.forEach((block) => {
             const copyBtn = document.createElement("div");
             copyBtn.textContent = "Copy";
-            copyBtn.classList.add("absolute", "top-[0.5rem]", "right-[0.5rem]", "bg-white/10", "cursor-pointer", "rounded", "px-1", "py-0.5");
+            copyBtn.classList.add(
+                "absolute",
+                "top-[0.5rem]",
+                "right-[0.5rem]",
+                "bg-white/10",
+                "cursor-pointer",
+                "rounded",
+                "px-1",
+                "py-0.5",
+            );
             block.appendChild(copyBtn);
-        })
+        });
 
-        codeBlocks.forEach(block => {
+        codeBlocks.forEach((block) => {
             const copyBtn = block.querySelector("div");
             copyBtn.addEventListener("click", () => {
-                const code = block.textContent;
-                navigator.clipboard.writeText(code);
+                const code = block.querySelector("code").textContent;
+                navigator.clipboard.writeText(code.trimEnd());
                 copyBtn.textContent = "Copied!";
                 setTimeout(() => {
                     copyBtn.textContent = "Copy";
                 }, 2000);
-            })
-        })
+            });
+        });
     }
 
     (function () {
-        loadCopyButtons()
-    })()
+        loadCopyButtons();
+    })();
 </script>
 {%endblock content %}
