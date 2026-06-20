@@ -8,6 +8,8 @@ description = "The Rust programming language is a systems programming language t
 header_img = "/images/header-rust.jpg"
 header_alt = "Rust"
 section = "Programming"
+word_count = 1440
+author = "Benjamin Chibuzor-Orie"
 tags = ["Rust", "Exciting", "Syntax"]
 +++
 The **Rust programming language** is a systems programming language that is **fast**, **safe**, and **concurrent**. It is a modern language that is designed to be a memory safe alternative to **C** and **C++** but that is not all it brings to the table. There are a number of features that make Rust a fun language to work with and I am going to be discussing some of them that I find particularly interesting in this article so get ready to try out some of these samples on your own and see how enjoyable they are to use.

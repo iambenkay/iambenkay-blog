@@ -8,6 +8,8 @@ description = "Recently I had to upgrade MongoDB from 7.x to 8.0 to use some of 
 header_img = "/images/header-mongo.jpg"
 header_alt = "MongoDB"
 section = "Programming"
+word_count = 779
+author = "Benjamin Chibuzor-Orie"
 tags = ["MongoDB", "Upgrade"]
 +++
 Recently I had to upgrade **MongoDB** from `7.x` to `8.0` to use some of the new features including bulk writes (the Rust SDK does not support this feature for `7.x` versions yet). I tried to follow the official migration documentation for migrating an existing replica set to 8.0 but I encountered a major issue that I want to share with you. Ultimately we will discuss my workaround for this.

@@ -8,9 +8,11 @@ description = "When running programs on an existing operating system, there are 
 header_img = "/images/header-rust.jpg"
 header_alt = "Rust"
 section = "Programming"
+word_count = 3193
+author = "Benjamin Chibuzor-Orie"
 tags = ["Rust", "Operating System", "Low Level"]
 +++
-In part 1 we built the foundation of our operating system using Rust, dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point.
+In [Part 1 we built the foundation of our operating system using Rust](@/operating-system-in-rust.md), dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point.
 ## Prepare for Entry
 When running programs on an operating system, there are a lot of things that are handled under the hood for us by the operating system. They are invisible to us and we take them for granted, we expect them to just work. In kernel space however, there are no training wheels, no invisible cogs turning in the background, everything is laid bare for us to see. Everything that works does so because we made it happen. It may sound overwhelming but it's this kind of foundational control that makes you truly appreciate how computers work at the lowest level. 
 
@@ -37,7 +39,7 @@ flowchart LR
     style SP fill: #000, color: #fff
 {% end %}
 ### Instruction
-An instruction is the smallest unit of work that can be performed by a CPU. It takes one or more operands and interacts with the stack thus incrementing or decrementing the stack pointer. There are tons of instructions built into a CPU to perform almost any operation you can think of and it varies from CPU to CPU so you have to learn the Instruction Set of the CPU you are working with if you want to write Assembly for it.
+An instruction is the smallest unit of work that can be performed by a CPU. It takes one or more operands and stores it's result in a register depending on the operation. There are tons of instructions built into a CPU to perform almost any operation you can think of and it varies from CPU to CPU so you have to learn the Instruction Set of the CPU you are working with if you want to write Assembly for it.
 ### Program Counter
 The program counter is a special CPU register that always contains the memory location of the next instruction to execute. As soon as the CPU finishes executing an instruction it checks the program counter and goes on to execute the instruction at the location stored in the program counter. After the CPU reads the program counter, the program counter gets incremented to point to the next instruction and the cycle continues.
 
@@ -56,6 +58,8 @@ Then load the module in `src/main.rs`:
 ```rust
 mod bootloader;
 ```
+This is a simple module containing the logic for our bootloader. Depending on the compilation target (aarch64) for now, it will load specific bootloader instructions from the respective file for each cpu.
+
 Let's also create a main function for our kernel in a new file `src/kernel.rs`:
 ```rust
 pub fn main() -> ! {
@@ -66,7 +70,6 @@ This function will be called from our entrypoint and will handle all our kernel 
 ```rust
 mod kernel;
 ```
-This is a simple module containing the logic for our bootloader. Depending on the compilation target (aarch64) for now, it will load specific bootloader instructions from the respective file for each cpu.
 
 Create another file `src/__arch__/aarch64/boot.rs`:
 ```rust
@@ -234,7 +237,7 @@ and then add the module to `src/main.rs`:
 mod board_core;
 ```
 #### Initialize BSS
-The BSS is a data segment that stores uninitialized global and static variables. At startup we need zero all the addresses within the BSS in preparation for uninitialized variables that will be stored in this segment. The following segment handles this:
+The BSS is a data segment that stores uninitialized global and static variables. At startup we need to zero all the addresses within the BSS in preparation for uninitialized variables that will be stored in this segment. The following segment handles this:
 ```as
 	// If execution reaches here, it is the boot core.
 
@@ -466,13 +469,25 @@ Before we build, add the following to your Cargo.toml so that our Make script ca
 ```toml
 [features]
 default = ["device", "rpi5"]
+emulator = ["color-rgb"]
 device = []
-emulator = []
 rpi5 = []
 rpi4 = []
+color-rgb = []
 ```
 
-Let's build the kernel:
+Let's build and run the kernel on QEMU using our emulator:
 ```bash
 cargo make emulate
 ```
+You should see a black QEMU screen pop up with no errors just like this one:
+{{ image(src="/images/os-part2-result.png", alt="operating system on qemu part2 result") }}
+
+In order to run on a physical Raspberry Pi 5 device there is also a convenient cargo make task:
+```bash
+cargo make sync
+```
+It attempts to copy the binary into a memory stick containing an existing Raspbian installation. Alter the task in `Makefile.toml` so it gets copied into the right path.
+
+## Conclusion
+In this part, we implemented a bootloader and successfully booted our kernel on a raspberry pi environment but we still have a blank screen. In Part 3 we will be writing to the display; in QEMU that's the screen but on Raspberry Pi 5 that is the HDMI output.

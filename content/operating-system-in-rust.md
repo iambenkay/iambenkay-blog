@@ -8,11 +8,16 @@ description = "Building an operating system is a project I have had my eyes set 
 header_img = "/images/header-rust.jpg"
 header_alt = "Rust"
 section = "Programming"
+word_count = 2088
+author = "Benjamin Chibuzor-Orie"
 tags = ["Rust", "Operating System", "Low Level"]
 +++
 Building an operating system is a project I have had my eyes set on ever since I discovered free will in the realm of programming. Years ago, I did a reasonable amount of research, paying extra attention to the subject during my computer science degree and I was able to understand **Operating System Theory** and how it works from first principles but I never really got around to building one. I had only flimsy reasons for not embarking on it like *"why build one when there are tons of working ones out there? The theoretical knowledge is enough"*. More recently, I am ignoring the need to not re-invent the wheel for the joy of programming. So if you are interested in also rebuilding stuff because you can, join me on this series as I document how I am going to be building rackOS.
 
 RackOS is in its infancy and the direction is not clear but the one certain thing is that I will be building it entirely in Rust, save some assembly instructions and a linker script and I will be explaining every single line of code along the way. It will also be designed to target the raspberrypi 4 & 5, on qemu and on real hardware respectively. This is an opportunity for anyone who wants to see how Rust works at the lowest of levels to hop on and join the ride.
+
+Note that this series will be your biggest lesson on delayed gratification because we will write a lot of code before we even get to see anything meaningful on screen but I will foreshadow what you can get by the end of part 3 if you are patient enough:
+{{ image(src="/images/os-part3-result.png", alt="Part 3 Results OS Dev") }}
 
 ## Project Setup
 First things first, let us setup the foundation of the project. I'll be straight with you, I love Rust and I enjoy using the Rust ecosystem in its entirety so I will stay true to that and use it as obsessively as any true Rustacean; I won't hold back. Without doubt, all the dependencies we need are freely available as long as you have a working Rust/Cargo installation.
@@ -148,7 +153,7 @@ args = [
 ```
 The task named `emulate` is used for spinning up a QEMU emulator running our raw kernel image. As per our configuration, it depends on `compile-emulate` task which compiles the raspberrypi4 variant of our kernel.
 
-For fast iterative development, using the emulator is preferred but if you think plugging and unplugging a memory stick every time you want to test your changes are rad then I am not going to stop you. Either approach will work with this tutorial, I have made sure of that.
+For fast iterative development, using the emulator is preferred but if you think plugging and unplugging a memory stick every time you want to test your changes is exciting then I am not going to stop you. Either approach will work with this tutorial, I have made sure of that.
 
 ## Building the Foundation
 Okay now that we have our project setup, let us discuss one of the most fundamental concepts in building an operating system, the entry point. When writing any kind of program, Your code needs to be loaded into a particular memory location in order for the CPU to start executing it. This is true for any kind of program not just operating systems. In higher level Rust, we define `fn main()` and that becomes the entry point of the program but the only reason this works is because the compiler is designed to output object code placing the start of the main function at a memory location where the CPU is expecting it to be. In lower level environments like the one we are currently working in, we have to do everything manually. We have to configure our kernel so that the entry point is located where the CPU will be looking for code to execute. If we don't do this then the CPU cannot run the kernel.
@@ -240,4 +245,6 @@ At this point, `cargo check` is no longer failing and if we run `cargo build` it
 ```
 warning: linker stderr: rust-lld: cannot find entry symbol _start; not setting start address
 ```
-Bro is looking for a way in but we have not provided any. The binary is pretty much useless without a recognizable entry point but we have one foot in the door now. In [Part 2 we are going to be implementing an entry point for our kernel](@/operating-system-in-rust-2.md)
+Bro is looking for a way in but we have not provided any. 
+## Conclusion
+The binary is pretty much useless without a recognizable entry point but we have one foot in the door now. In [Part 2 we are going to be implementing an entry point for our kernel](@/operating-system-in-rust-2.md)
