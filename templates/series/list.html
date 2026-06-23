@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block head %}<title>Series — Benjamin Chibuzor-Orie</title>{% endblock head %}
+
+{% block content %}
+<p class="text-xs font-semibold uppercase tracking-widest text-rose-500 mb-3">Collections</p>
+<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 mb-10">All Series</h1>
+
+<div class="flex flex-col gap-6">
+  {% for term in terms %}
+  <a href="{{ term.permalink }}" class="group block rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800 transition-colors p-6 shadow-sm">
+    <h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors">{{ term.name }}</h2>
+    <p class="mt-1 text-sm text-zinc-400 dark:text-zinc-500">{{ term.pages | length }} parts</p>
+  </a>
+  {% endfor %}
+</div>
+{% endblock content %}

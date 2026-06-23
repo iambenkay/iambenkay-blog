@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block head %}<title>{{ term.name }} — Benjamin Chibuzor-Orie</title>{% endblock head %}
+
+{% block content %}
+
+<a href="/" class="inline-flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mb-8">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+  </svg>
+  Home
+</a>
+
+<p class="text-xs font-semibold uppercase tracking-widest text-rose-500 mb-3">Series · {{ term.pages | length }} parts</p>
+<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight mb-10">
+  {{ term.name }}
+</h1>
+
+<ol class="flex flex-col gap-4">
+  {% for page in term.pages | sort(attribute="date") %}
+  <li>
+    <a href="{{ page.permalink }}" class="group flex gap-4 sm:gap-6 items-start rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800 transition-colors p-4 sm:p-5 shadow-sm">
+      <span class="text-2xl font-extrabold text-zinc-200 dark:text-zinc-700 shrink-0 w-8 text-center leading-tight mt-0.5">{{ loop.index }}</span>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-x-2 text-xs text-zinc-400 dark:text-zinc-500 mb-1">
+          <time>{{ page.date | date(format="%B %d, %Y") }}</time>
+          {% if page.extra.word_count %}
+            <span>·</span>
+            <span>{{ (page.extra.word_count / 200) | round }} min read</span>
+          {% endif %}
+        </div>
+        <h2 class="text-base sm:text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors leading-snug">
+          {{ page.title }}
+        </h2>
+        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">{{ page.description }}</p>
+      </div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>
+    </a>
+  </li>
+  {% endfor %}
+</ol>
+
+{% endblock content %}

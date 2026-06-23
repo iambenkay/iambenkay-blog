@@ -11,6 +11,9 @@ section = "Programming"
 word_count = 3193
 author = "Benjamin Chibuzor-Orie"
 tags = ["Rust", "Operating System", "Low Level"]
+
+[taxonomies]
+series = ["Building an Operating System in Rust"]
 +++
 In [Part 1 we built the foundation of our operating system using Rust](@/operating-system-in-rust.md), dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point. 
 

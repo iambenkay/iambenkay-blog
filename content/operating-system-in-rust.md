@@ -11,6 +11,9 @@ section = "Programming"
 word_count = 2088
 author = "Benjamin Chibuzor-Orie"
 tags = ["Rust", "Operating System", "Low Level"]
+
+[taxonomies]
+series = ["Building an Operating System in Rust"]
 +++
 Building an operating system is a project I have had my eyes set on ever since I discovered free will in the realm of programming. Years ago, I did a reasonable amount of research, paying extra attention to the subject during my computer science degree and I was able to understand **Operating System Theory** and how it works from first principles but I never really got around to building one. I had only flimsy reasons for not embarking on it like *"why build one when there are tons of working ones out there? The theoretical knowledge is enough"*. More recently, I am ignoring the need to not re-invent the wheel for the joy of programming. So if you are interested in also rebuilding stuff because you can, join me on this series as I document how I am going to be building rackOS.
 
