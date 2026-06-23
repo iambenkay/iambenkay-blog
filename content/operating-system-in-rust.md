@@ -19,6 +19,8 @@ RackOS is in its infancy and the direction is not clear but the one certain thin
 Note that this series will be your biggest lesson on delayed gratification because we will write a lot of code before we even get to see anything meaningful on screen but I will foreshadow what you can get by the end of part 3 if you are patient enough:
 {{ image(src="/images/os-part3-result.png", alt="Part 3 Results OS Dev") }}
 
+You can also clone the <a href="https://github.com/iambenkay/rackOS/tree/part-1" target="_blank" rel="noopener">source code for part 1</a> from Github and follow along.
+
 ## Project Setup
 First things first, let us setup the foundation of the project. I'll be straight with you, I love Rust and I enjoy using the Rust ecosystem in its entirety so I will stay true to that and use it as obsessively as any true Rustacean; I won't hold back. Without doubt, all the dependencies we need are freely available as long as you have a working Rust/Cargo installation.
 
@@ -80,8 +82,8 @@ Cargo make is more modern and has a better syntax, we would be crazy not to go w
 Let us set up our `Makefile.toml`:
 ```toml
 [env]
-RUSTFLAGS = "-C target-cpu=cortex-a76 -C link-arg=--library-path=src/__board__/raspberrypi -C link-arg=--script=kernel.ld"
-RUSTFLAGS_PI4 = "-C target-cpu=cortex-a72 -C link-arg=--library-path=src/__board__/raspberrypi -C link-arg=--script=kernel.ld"
+RUSTFLAGS = "-C target-cpu=cortex-a76 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld"
+RUSTFLAGS_PI4 = "-C target-cpu=cortex-a72 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld"
 
 [tasks.compile]
 script = "RUSTFLAGS=${RUSTFLAGS} cargo objcopy --release  -- --strip-all -O binary target/kernel_2712.img"
@@ -111,8 +113,8 @@ args = [
 Let's go over everything that's happening here section by section:
 ```toml
 [env]
-RUSTFLAGS = "-C target-cpu=cortex-a76 -C link-arg=--library-path=src/__board__/raspberrypi -C link-arg=--script=kernel.ld"
-RUSTFLAGS_PI4 = "-C target-cpu=cortex-a72 -C link-arg=--library-path=src/__board__/raspberrypi -C link-arg=--script=kernel.ld"
+RUSTFLAGS = "-C target-cpu=cortex-a76 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld"
+RUSTFLAGS_PI4 = "-C target-cpu=cortex-a72 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld"
 ```
 The `[env]` directive is used to setup environment variables that all make tasks can inherit from and pass into their execution scope.
 Here we define two variables called `RUSTFLAGS`. They are used to pass special configuration options to rustc during compilation. One is used when compiling for the Pi 4 and the other is used for the Pi 5.
@@ -213,7 +215,7 @@ aarch64-cpu = { version = "9.x.x" }
 ```
 This adds a new crate with which we can conveniently run Aarch64 CPU instructions from Rust land in a rusty way. For the first time, we are going to write code which is expected to run on only one CPU architecture, aarch64. We will structure our code so that we can easily extend the operating system to work on a matrix of CPUs and Motherboards.
 
-Create a new file `src/__arch__/aarch64/cpu.rs`:
+Create a new file `src/processors/aarch64/cpu.rs`:
 ```rust
 use aarch64_cpu::asm;
 
@@ -224,21 +226,30 @@ pub fn wait_forever() -> ! {
     }
 }
 ```
-This function is really simple, it loops forever but with an interesting twist; it calls the `Wait-For-Event` instruction in ASM in order to optimize the forever loop so that the processor can go into a low power sleep mode until an event is received. Let's bubble it up and use it in our panic handler.
+This function is really simple, it loops forever but with an interesting twist; it calls the `Wait-For-Event` instruction in ASM in order to optimize the forever loop so that the processor can go into a low power sleep mode until an event is received. Let's link this file into the rest of our crate and use it in our panic handler.
 
-Create a new file `src/cpu.rs`:
+Create a file `src/processors/aarch64/mod.rs`:
 ```rust
-#[cfg(target_arch = "aarch64")]
-#[path = "__arch__/aarch64/cpu.rs"]
-mod arch_cpu;
+pub mod cpu;
+```
+Then create `src/processors/mod.rs`:
+```rust
+mod aarch64;
 
-pub use arch_cpu::wait_forever;
+#[cfg(target_arch = "aarch64")]
+pub use aarch64::cpu::wait_forever;
+```
+Most of the code we are going to write will be either specific to a CPU type or specific to a motherboard so we will be doing this kind of modularization from the start so that our code is well organized and maintainable.
+
+Finally, add the following content to `src/main.rs`:
+```rust
+mod processors;
 ```
 We can go back to `panic_cfg.rs` and update the implementation of `fn panic()`:
 ```rust
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    crate::cpu::wait_forever()
+    crate::processors::wait_forever()
 }
 ```
 At this point, `cargo check` is no longer failing and if we run `cargo build` it succeeds with a warning:

@@ -12,7 +12,9 @@ word_count = 3193
 author = "Benjamin Chibuzor-Orie"
 tags = ["Rust", "Operating System", "Low Level"]
 +++
-In [Part 1 we built the foundation of our operating system using Rust](@/operating-system-in-rust.md), dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point.
+In [Part 1 we built the foundation of our operating system using Rust](@/operating-system-in-rust.md), dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point. 
+
+Feel free to clone the <a href="https://github.com/iambenkay/rackOS/tree/part-2" target="_blank" rel="noopener">source code for part 2</a> from Github and follow along.
 ## Prepare for Entry
 When running programs on an operating system, there are a lot of things that are handled under the hood for us by the operating system. They are invisible to us and we take them for granted, we expect them to just work. In kernel space however, there are no training wheels, no invisible cogs turning in the background, everything is laid bare for us to see. Everything that works does so because we made it happen. It may sound overwhelming but it's this kind of foundational control that makes you truly appreciate how computers work at the lowest level. 
 
@@ -43,24 +45,12 @@ An instruction is the smallest unit of work that can be performed by a CPU. It t
 ### Program Counter
 The program counter is a special CPU register that always contains the memory location of the next instruction to execute. As soon as the CPU finishes executing an instruction it checks the program counter and goes on to execute the instruction at the location stored in the program counter. After the CPU reads the program counter, the program counter gets incremented to point to the next instruction and the cycle continues.
 
-## Implementing the Bootloader
+## Implementing the boot image
 Now that we have a foundational understanding of the building blocks, let's write some assembly code for booting into our kernel. I know I promised we will write as much Rust as possible but this is one of those scenarios where Rust does not cut it. This part of the process cannot be handled by Rust because Rust expects a stack pointer to have already been set up so it is a chicken and egg problem. Remember, the training wheels are off and everything is being done manually so this is one time when we will have to drop down to Assembly in order to configure our entrypoint. This is a delicate point so I want you to pay as much attention as you can afford to. 
 
-For your information, any code related to the entrypoint of a kernel is called the  bootloader. We will be writing the code for our bootloader in a bit but let us first structure the crate.
+For your information, any code related to the entrypoint of a kernel is called the boot code. We will be writing the our boot code, or as I prefer to call it "boot image", in a bit but let us first structure our crate.
 
-Create a file `src/bootloader.rs`:
-```rust
-#[cfg(target_arch = "aarch64")]
-#[path = "__arch__/aarch64/boot.rs"]
-mod boot;
-```
-Then load the module in `src/main.rs`:
-```rust
-mod bootloader;
-```
-This is a simple module containing the logic for our bootloader. Depending on the compilation target (aarch64) for now, it will load specific bootloader instructions from the respective file for each cpu.
-
-Let's also create a main function for our kernel in a new file `src/kernel.rs`:
+Let's create a main function for our kernel in a new file `src/kernel.rs`:
 ```rust
 pub fn main() -> ! {
     loop {}
@@ -71,7 +61,7 @@ This function will be called from our entrypoint and will handle all our kernel 
 mod kernel;
 ```
 
-Create another file `src/__arch__/aarch64/boot.rs`:
+Create a file `src/processors/aarch64/bootimage.rs`:
 ```rust
 use core::arch::global_asm;
 
@@ -87,7 +77,11 @@ pub fn _start_rust() -> ! {
 ```
 This is processor specific code. In this case it is expected to run only on aarch64 cpus. We load some assembly from the file `boot.S` substituting a variable `CONST_CORE_ID_MASK` in the assembly with the value `0b11`. Then we define `fn _start_rust()` which will serve as the first point of contact between assembly land and rust land. It calls our kernel main which we defined earlier. Note the `no_mangle` directive. It is required in order for the name of the function to not become scrambled during compilation since we will be calling the function from Assembly.
 
-Add the following content to `src/__arch__/aarch64/boot.S`:
+Then load the module in `src/processors/aarch64/mod.rs`:
+```rust
+mod bootimage;
+```
+Add the following content to `src/processors/aarch64/boot.S`:
 ```as
 //--------------------------------------------------------------------------------------------------
 // Definitions
@@ -214,11 +208,11 @@ so we need a mask that can select only the last two bits of this register value 
 0b01110010 & 0b11 = 0b10
 0b01110011 & 0b11 = 0b11
 ```
-We defined the mask `CONST_CORE_ID_MASK` a while ago in `src/__arch__/aarch64/boot.rs` and this is where it gets used. Depending on the board we are running on we can change this mask to `0b111` to support up to 7 cores or `0b1111` to support up to 15 cores.
+We defined the mask `CONST_CORE_ID_MASK` a while ago in `src/processors/aarch64/bootimage.rs` and this is where it gets used. Depending on the board we are running on we can change this mask to `0b111` to support up to 7 cores or `0b1111` to support up to 15 cores.
 
 Next, we load the value of the variable `BOOT_CORE_ID` (which we will define soon in Rust) and store that in the register `x1`. At this point `x0` contains the CPU number which the code is currently executing on and `x1` contains the target CPU we want to take control while parking the rest. We compare their values and branch to the parking logic if `x0` is not equal to `x1`, else we continue execution.
 
-Before we continue describing our startup logic, let's define the `BOOT_CORE_ID` variable that we used above. Create a file `src/__board__/raspberrypi/cpu.rs`:
+Before we continue describing our startup logic, let's define the `BOOT_CORE_ID` variable that we used above. Create a file `src/motherboards/raspberrypi/cpu.rs`:
 ```rust
 #[cfg(target_arch = "aarch64")]
 #[unsafe(no_mangle)]
@@ -227,14 +221,17 @@ pub static BOOT_CORE_ID: u64 = 0;
 ```
 `link_section = ".text._start_arguments"` adds a new section labelled `.text._start_arguments` and the variable `BOOT_CORE_ID` in that section. We are keeping the value as `0` because we want to boot into the first core as our primary core.
 
-Create another file `src/board_core.rs`:
+Create another file `src/motherboards/raspberrypi/mod.rs`:
 ```rust
-#[path = "__board__/raspberrypi/cpu.rs"]
 mod cpu;
+```
+Then another file `src/motherboards/mod.rs`:
+```rust
+pub mod raspberrypi;
 ```
 and then add the module to `src/main.rs`:
 ```rust
-mod board_core;
+mod motherboards;
 ```
 #### Initialize BSS
 The BSS is a data segment that stores uninitialized global and static variables. At startup we need to zero all the addresses within the BSS in preparation for uninitialized variables that will be stored in this segment. The following segment handles this:
@@ -264,7 +261,7 @@ The next piece of code is the bridge into our Rust code:
 	// Jump to Rust code.
 	b	_start_rust
 ```
-First we store the address of the end of the stack (configured later in the linker script) in `x0`. Then we set the value of the stack pointer register to that address. Finally we branch to the label for our Rust entry point (defined in `src/__arch__/aarch64/boot.rs`).
+First we store the address of the end of the stack (configured later in the linker script) in `x0`. Then we set the value of the stack pointer register to that address. Finally we branch to the label for our Rust entry point (defined in `src/processors/aarch64/bootimage.rs`).
 
 The next piece of code just defines the label for our parking loop so the other cores know what to do after being disqualified from running the kernel:
 ```as
@@ -279,9 +276,9 @@ Lastly, we define some metadata for this assembly module at the very end:
 .type	_start, function
 .global	_start
 ```
-The first directive `.size` computes the size of the routine `_start`. The second `.type` directive specifies the type of `_start` which is a function. The last `.global` directive makes the `_start` label a global entity which can be referenced by other libraries.
+The first directive `.size` computes the size of the routine `_start`. The second directive `.type` specifies the type of `_start` which is a function. The last directive `.global` makes the `_start` label a global entity which can be referenced by other libraries.
 
-Summarily, here is the bootloader flow:
+Summarily, here is the boot flow:
 {% mermaid() %}
 flowchart TD
     A["Firmware loads kernel"] --> B["_start<br/>(boot.S, .text._start)"]
@@ -290,16 +287,16 @@ flowchart TD
     C -- "yes" --> E["Zero BSS<br/>(__bss_start .. __bss_end_exclusive)"]
     E --> F["sp = __boot_core_stack_end_exclusive"]
     F --> G["b _start_rust"]
-    G --> H["_start_rust<br/>(boot.rs)"]
+    G --> H["_start_rust<br/>(bootimage.rs)"]
     H --> I["kernel::main()"]
 {% end %}
 
-We have implemented our bootloader in pure Assembly. I hope you enjoyed that! One last important step before we can run our kernel for the first time is Linking.
+We have implemented our boot image in pure Assembly. I hope you enjoyed that! One last important step before we can run our kernel for the first time is Linking.
 
 ### Writing the Linker Script
 Linking is the glue for everything we have done. A linker is responsible for taking both the assembly code and the Rust code and linking them into one binary but we have to explicitly tell the linker how we want our code to be organized; we have to define the memory layout for our binary!
 
-Create the file `src/__board__/raspberrypi/kernel.ld` and add the following content:
+Create the file `src/motherboards/raspberrypi/kernel.ld` and add the following content:
 ```ld
 __rpi_phys_dram_start_addr = 0;
 
@@ -464,17 +461,18 @@ SECTIONS
 ```
 The summary of what is going on is it defines the bounds of the Execution Stack, the actual code segment, and the data and BSS segment. I don't want to go too deep into the details of the linker script because it is vanity to master it all but feel free to discuss the details with any LLM in order to fully understand what is going on here.
 
-We are done with our bootloader and at this stage we can boot our kernel on either a physical device or the QEMU emulator. 
+We are done with our boot image and at this stage we can boot our kernel on either a physical device or the QEMU emulator. 
 Before we build, add the following to your Cargo.toml so that our Make script can run happily:
 ```toml
 [features]
 default = ["device", "rpi5"]
-emulator = ["color-rgb"]
+emulator = ["ltr-rgb"]
 device = []
 rpi5 = []
 rpi4 = []
-color-rgb = []
+ltr-rgb = []
 ```
+We aren't using some of the features listed here yet but in due time we will cover them.
 
 Let's build and run the kernel on QEMU using our emulator:
 ```bash
@@ -490,4 +488,4 @@ cargo make sync
 It attempts to copy the binary into a memory stick containing an existing Raspbian installation. Alter the task in `Makefile.toml` so it gets copied into the right path.
 
 ## Conclusion
-In this part, we implemented a bootloader and successfully booted our kernel on a raspberry pi environment but we still have a blank screen. In Part 3 we will be writing to the display; in QEMU that's the screen but on Raspberry Pi 5 that is the HDMI output.
+In this part, we implemented a boot image and successfully booted our kernel on a raspberry pi environment but we still have a blank screen. In [Part 3 we will be writing to the display](@/operating-system-in-rust-3.md); in QEMU that's the screen but on Raspberry Pi 5 that is the HDMI output.

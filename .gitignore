@@ -1,2 +1,4 @@
 public/
 static/processed_images
+.DS_Store
+**/.DS_Store
