@@ -16,7 +16,7 @@ tags = ["Rust", "Operating System", "Low Level"]
 series = ["Building an Operating System in Rust"]
 +++
 
-Before you start, note that this chapter is still under construction. The complete source code already lives on [Github](https://github.com/iambenkay/kluster/tree/a2b2d150e4a5013b133b77816c124033358692be) but preparing a deep dive takes time. If you are up to it, you can clone the repository and actually get ahead while I work on the blog.
+Before you start, note that this chapter is still under construction. The complete source code already lives on [Github](https://github.com/iambenkay/kluster/tree/340c69b5818b9998f09a9b9b382844bab158979b) but preparing a deep dive takes time. If you are up to it, you can clone the repository and actually get ahead while I work on the blog.
 
 In [Part 2 we built an entrypoint for our operating system](operating-system-in-rust-2.md) and ran it successfully on QEMU and a physical Raspberry Pi 5 device. We also learnt about the boot image and how to link our kernel source code into one kernel binary. Next we are going to write to the screen!
 
