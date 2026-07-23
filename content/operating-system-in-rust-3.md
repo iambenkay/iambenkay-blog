@@ -18,7 +18,7 @@ series = ["Building an Operating System in Rust"]
 
 Before you start, note that this chapter is still under construction. The complete source code already lives on [Github](https://github.com/iambenkay/kluster/tree/340c69b5818b9998f09a9b9b382844bab158979b) but preparing a deep dive takes time. If you are up to it, you can clone the repository and actually get ahead while I work on the blog.
 
-In [Part 2 we built an entrypoint for our operating system](operating-system-in-rust-2.md) and ran it successfully on QEMU and a physical Raspberry Pi 5 device. We also learnt about the boot image and how to link our kernel source code into one kernel binary. Next we are going to write to the screen!
+In [Part 2 we built an entrypoint for our operating system](@/operating-system-in-rust-2.md) and ran it successfully on QEMU and a physical Raspberry Pi 5 device. We also learnt about the boot image and how to link our kernel source code into one kernel binary. Next we are going to write to the screen!
 
 If you have been binging this series, now is the time to take a short break before going into the next part because it's the most complex part yet. In high level land, writing to the screen is a trivial task: you want text then just call `println`, you want shapes then just use a drawing library like `bevy` or `wgpu`. In kernel land, these luxuries have been stripped away. You have to earn every pixel yourself. We will learn our first brutal lesson when it comes to writing operating systems: You have to be willing to dig through obscure documentation to find what you are looking for. In many cases the documentation will be non-existent and you need to find other ways to achieve your goal.
 

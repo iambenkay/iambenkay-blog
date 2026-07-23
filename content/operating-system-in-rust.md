@@ -328,4 +328,4 @@ Bro is looking for a way in but we have not provided any.
 
 ## Conclusion
 
-The binary is pretty much useless without a recognizable entry point but we have one foot in the door now. In [Part 2 we are going to be implementing an entry point for our kernel](operating-system-in-rust-2.md)
+The binary is pretty much useless without a recognizable entry point but we have one foot in the door now. In [Part 2 we are going to be implementing an entry point for our kernel](@/operating-system-in-rust-2.md)

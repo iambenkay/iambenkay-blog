@@ -16,7 +16,7 @@ tags = ["Rust", "Operating System", "Low Level"]
 series = ["Building an Operating System in Rust"]
 +++
 
-In [Part 1 we built the foundation of our operating system using Rust](operating-system-in-rust.md), dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point.
+In [Part 1 we built the foundation of our operating system using Rust](@/operating-system-in-rust.md), dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point.
 
 Feel free to clone the <a href="https://github.com/iambenkay/kluster/tree/part-2" target="_blank" rel="noopener">source code for part 2</a> from Github and follow along.
 
@@ -571,4 +571,4 @@ It attempts to copy the binary into a memory stick containing an existing Raspbi
 
 ## Conclusion
 
-In this part, we implemented a boot image and successfully booted our kernel on a raspberry pi environment but we still have a blank screen. In [Part 3 we will be writing to the display](operating-system-in-rust-3.md); in QEMU that's the screen but on Raspberry Pi 5 that is the HDMI output.
+In this part, we implemented a boot image and successfully booted our kernel on a raspberry pi environment but we still have a blank screen. In [Part 3 we will be writing to the display](@/operating-system-in-rust-3.md); in QEMU that's the screen but on Raspberry Pi 5 that is the HDMI output.
