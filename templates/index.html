@@ -22,8 +22,9 @@
     </p>
 </section>
 
+{% set published_pages = section.pages %}
 <!-- Featured post -->
-{% set first_page = section.pages | first %}
+{% set first_page = published_pages | first %}
 <section class="mb-14">
     <p
         class="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-5"
@@ -46,10 +47,13 @@
                 <div
                     class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-zinc-400 dark:text-zinc-500 mb-3"
                 >
+                    {% if first_page.extra.under_construction %}
+                    <span>Under Construction</span>
+                    {% else %}
                     <time
                         >{{ first_page.date | date(format="%B %d, %Y") }}</time
                     >
-                    {% if first_page.extra.word_count %}
+                    {% endif %} {% if first_page.extra.word_count %}
                     <span class="hidden sm:inline">·</span>
                     <span
                         >{{ first_page.extra.word_count }} words · {{
@@ -103,8 +107,8 @@
 </section>
 
 <!-- Series -->
-{% set all_series = get_taxonomy(kind="series") %} {% if all_series.items |
-length > 0 %}
+{% set all_series = get_taxonomy(kind="series") %} {% set published_series =
+all_series.items %} {% if published_series | length > 0 %}
 <section class="mb-14">
     <div class="flex items-center justify-between mb-5">
         <p
@@ -119,7 +123,7 @@ length > 0 %}
         >
     </div>
     <div class="flex flex-col gap-4">
-        {% for series in all_series.items %}
+        {% for series in published_series %}
         <a
             href="{{ series.permalink }}"
             class="group flex items-center justify-between rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800 transition-colors p-5 shadow-sm"
@@ -155,7 +159,7 @@ length > 0 %}
 {% endif %}
 
 <!-- Older articles -->
-{% if section.pages | length > 1 %}
+{% if published_pages | length > 1 %}
 <section>
     <p
         class="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-5"
@@ -163,8 +167,8 @@ length > 0 %}
         All articles
     </p>
     <div class="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-        {% for page in section.pages %} {% if loop.index == 1 %}{% continue %}{%
-        endif %}
+        {% for page in published_pages %} {% if loop.index == 1 %}{% continue
+        %}{% endif %}
         <a href="{{ page.path }}" class="group flex gap-4 py-5 items-start">
             {% set image = resize_image(path=page.extra.header_img, width=200,
             height=120) %}
@@ -178,8 +182,11 @@ length > 0 %}
                 <div
                     class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-400 dark:text-zinc-500"
                 >
+                    {% if page.extra.under_construction %}
+                    <span>Under Construction</span>
+                    {% else %}
                     <time>{{ page.date | date(format="%B %d, %Y") }}</time>
-                    {% if page.extra.word_count %}
+                    {% endif %} {% if page.extra.word_count %}
                     <span>·</span>
                     <span
                         >{{ (page.extra.word_count / 200) | round }} min
