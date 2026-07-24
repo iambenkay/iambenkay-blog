@@ -1,0 +1,8 @@
+name = "iambenkay-blog"
+compatibility_date = "2026-01-22"
+
+[build]
+command = "zola build"
+
+[assets]
+directory = "./public"
