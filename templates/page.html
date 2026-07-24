@@ -1,5 +1,6 @@
 {% extends "base.html" %} {% block head %}
 <title>{{ page.title }} — Benjamin Chibuzor-Orie</title>
+<link rel="canonical" href="{{ page.permalink | safe }}" />
 <meta property="og:title" content="{{ page.title }}" />
 <meta property="og:description" content="{{ page.description }}" />
 <meta property="og:image" content="{{ page.extra.header_img }}" />
