@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en" class="">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        
+<title>Building an Operating System In Rust Part 1 — Benjamin Chibuzor-Orie</title>
+<link rel="canonical" href="https://iambenkay.com/building-an-operating-system-in-rust-part-1/" />
+<meta property="og:title" content="Building an Operating System In Rust Part 1" />
+<meta property="og:description" content="Building an operating system is a project I have had my eyes set on ever since I discovered free will in the realms of programming. Before now, I had done a reasonable amount of research and paid extra attention during my computer science degree and I was able to" />
+<meta property="og:image" content="&#x2F;images&#x2F;header-rust.jpg" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https:&#x2F;&#x2F;iambenkay.com&#x2F;building-an-operating-system-in-rust-part-1&#x2F;" />
+<meta property="article:published_time" content="2026-06-18" />
+<meta property="article:section" content="Programming" />
+
+<meta property="article:tag" content="Rust" />
+
+<meta property="article:tag" content="Operating System" />
+
+<meta property="article:tag" content="Low Level" />
+ 
+        <link href="/markdown.css" rel="stylesheet" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+            };
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,600;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "Inter", sans-serif;
+            }
+            .font-serif {
+                font-family: "Lora", serif;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-200"
+    >
+        <!-- Nav -->
+        <header
+            class="border-b border-zinc-200 dark:border-zinc-800 bg-stone-50/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10"
+        >
+            <div
+                class="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between"
+            >
+                <a href="/" class="flex items-center gap-2.5 group min-w-0">
+                    <div
+                        class="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+                    >
+                        B
+                    </div>
+                    <span
+                        class="font-semibold text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors truncate"
+                        >Benjamin Chibuzor-Orie</span
+                    >
+                </a>
+                <button
+                    id="theme-toggle"
+                    aria-label="Toggle dark mode"
+                    class="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg
+                        id="icon-sun"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="hidden w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z"
+                        />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg
+                        id="icon-moon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
+                        />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto px-6 py-10">
+            
+
+<!-- Back link -->
+<a
+    href="javascript:history.back()"
+    class="inline-flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mb-8"
+>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+    >
+        <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M7 16l-4-4m0 0l4-4m-4 4h18"
+        />
+    </svg>
+    Back
+</a>
+
+<!-- Tags -->
+
+<div class="flex flex-wrap gap-2 mb-4">
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Rust
+    </span>
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Operating System
+    </span>
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Low Level
+    </span>
+    
+</div>
+
+
+<!-- Title -->
+<h1
+    class="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight"
+>
+    Building an Operating System In Rust Part 1
+</h1>
+
+<!-- Byline -->
+<div class="flex items-center gap-3 mt-5">
+    <div
+        class="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+    >
+        B
+    </div>
+    <div>
+        <p class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            Benjamin Chibuzor-Orie
+        </p>
+        <div
+            class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-400 dark:text-zinc-500"
+        >
+            
+            <time>June 18, 2026</time>
+             
+            <span>·</span>
+            <span>2088 words</span>
+            <span>·</span>
+            <span>10 min read</span>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Hero image -->
+
+<img
+    loading="lazy"
+    src="https:&#x2F;&#x2F;iambenkay.com&#x2F;processed_images&#x2F;header-rust.40d8abec8dd4909a.jpg"
+    alt="Rust"
+    class="mt-8 w-full rounded-2xl object-cover object-center border border-zinc-100 dark:border-zinc-800 shadow-sm"
+/>
+
+<!-- Article body -->
+<div id="blog-body" class="markdown mt-10 mb-12"><p>Building an operating system is a project I have had my eyes set on ever since I discovered free will in the realm of programming. Years ago, I did a reasonable amount of research, paying extra attention to the subject during my computer science degree and I was able to understand <strong>Operating System Theory</strong> and how it works from first principles but I never really got around to building one. I had only flimsy reasons for not embarking on it like <em>"why build one when there are tons of working ones out there? The theoretical knowledge is enough"</em>. More recently, I am ignoring the need to not re-invent the wheel for the joy of programming. So if you are interested in also rebuilding stuff because you can, join me on this series as I document how I am going to be building kluster.</p>
+<p><a href="https://github.com/iambenkay/kluster">kluster</a> is in its infancy and the direction is not clear but the one certain thing is that I will be building it entirely in Rust, save some assembly instructions and a linker script and I will be explaining every single line of code along the way. It will also be designed to target the raspberrypi 4 &amp; 5, on qemu and on real hardware respectively. This is an opportunity for anyone who wants to see how Rust works at the lowest of levels to hop on and join the ride.</p>
+<p>Note that this series will be your biggest lesson on delayed gratification because we will write a lot of code before we even get to see anything meaningful on screen but I will foreshadow what you can get by the end of part 3 if you are patient enough:
+<center><img class="p-1 w-full" src="&#x2F;images&#x2F;os-part3-result.png" alt="Part 3 Results OS Dev" /></center>
+</p>
+<p>You can also clone the <a href="https://github.com/iambenkay/kluster/tree/part-1" target="_blank" rel="noopener">source code for part 1</a> from Github and follow along.</p>
+<h2 id="project-setup">Project Setup</h2>
+<p>First things first, let us setup the foundation of the project. I'll be straight with you, I love Rust and I enjoy using the Rust ecosystem in its entirety so I will stay true to that and use it as obsessively as any true Rustacean; I won't hold back. Without doubt, all the dependencies we need are freely available as long as you have a working Rust/Cargo installation.</p>
+<h3 id="installing-rust">Installing Rust</h3>
+<p>I should assume you have the runtime if you are even opening any page with this title but for the benefit of doubt:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">curl --proto </span><span>&#39;</span><span style="color:#a3be8c;">=https</span><span>&#39;</span><span style="color:#bf616a;"> --tlsv1</span><span>.2</span><span style="color:#bf616a;"> -sSf</span><span> https://sh.rustup.rs | </span><span style="color:#bf616a;">sh
+</span></code></pre>
+<p>Run the above command to install the Rust toolchain. If you already have the Rust toolchain then update it to the latest version:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>rustup update
+</span></code></pre>
+<p>Create a new Rust binary crate:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>cargo new --bin op-sys
+</span></code></pre>
+<p>Now let's do some plumbing to setup the foundation for the project.</p>
+<h3 id="let-there-be-night">Let there be night</h3>
+<p>I will explain in a couple paragraphs why, but we need the rust nightly toolchain for this project so go ahead and install it:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">rustup</span><span> toolchain install nightly
+</span></code></pre>
+<p>Also configure it as the default for this project by creating a file <code>rust-toolchain.toml</code> in the root and adding the following content:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[toolchain]
+</span><span style="color:#bf616a;">channel </span><span>= &quot;</span><span style="color:#a3be8c;">nightly</span><span>&quot;
+</span></code></pre>
+<p>For our OS we are also going to be targetting the Aarch64 CPU barebones so first we install the target:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">rustup</span><span> target add aarch64-unknown-none-softfloat
+</span></code></pre>
+<p>Then we configure it as the default compilation target for this project by creating a file <code>.cargo/config.toml</code> in the root and adding the following content:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[build]
+</span><span style="color:#bf616a;">target </span><span>= &quot;</span><span style="color:#a3be8c;">aarch64-unknown-none-softfloat</span><span>&quot;
+</span></code></pre>
+<h3 id="build-tools">Build tools</h3>
+<p>We need to install <code>llvm-tools</code> on the nightly toolchain because we make use of <code>llvm-objcopy</code> during the build process to turn the ELF into a raw kernel image. <code>cargo-binutils</code> is a wrapper around the tools installed by <code>llvm-tools</code> that allow them to work well with our cargo project and we will also be installing that.</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">rustup</span><span> component add llvm-tools</span><span style="color:#bf616a;"> --toolchain</span><span> nightly
+</span><span style="color:#bf616a;">cargo</span><span> install cargo-binutils
+</span></code></pre>
+<p>Next we need to install <code>cargo-make</code>. It will help us organize our build harness into smaller manageable tasks.</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cargo</span><span> install cargo-make
+</span></code></pre>
+<h3 id="install-the-emulator">Install the Emulator</h3>
+<p>We need to install the emulator on which we will be running our Operating System. We will be using QEMU. I won't go into platform specific details on how to install QEMU but feel free to dig through the <a href="https://www.qemu.org/download/#macos">documentation</a> to get your installation up and running.
+After installing it run this command to make sure you have raspi4b emulator installed:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">qemu-system-aarch64 -M</span><span> help | </span><span style="color:#bf616a;">grep</span><span> raspi4b
+</span></code></pre>
+<p>Note that this OS will also be designed to target Raspberry Pi 5 hardware so if you have that then you are in luck.</p>
+<h3 id="setting-up-the-makefile-toml">Setting up the Makefile.toml</h3>
+<p>In the spirit of using Rust from top to bottom we have opted for using <code>cargo make</code> a build tool reminiscient of <code>make</code> the C build tool.
+Cargo make is more modern and has a better syntax, we would be crazy not to go with it. Cargo make is a very flexible tool that can achieve almost any kind of configuration you are looking for. It is not in our best interest to cover all of its capabilities in this series but we will cover as many features as we end up using.</p>
+<p>Let us set up our <code>Makefile.toml</code>:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[env]
+</span><span style="color:#bf616a;">RUSTFLAGS </span><span>= &quot;</span><span style="color:#a3be8c;">-C target-cpu=cortex-a76 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld</span><span>&quot;
+</span><span style="color:#bf616a;">RUSTFLAGS_PI4 </span><span>= &quot;</span><span style="color:#a3be8c;">-C target-cpu=cortex-a72 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld</span><span>&quot;
+</span><span>
+</span><span>[tasks.compile]
+</span><span style="color:#bf616a;">script </span><span>= &quot;</span><span style="color:#a3be8c;">RUSTFLAGS=${RUSTFLAGS} cargo objcopy --release  -- --strip-all -O binary target/kernel_2712.img</span><span>&quot;
+</span><span>
+</span><span>[tasks.compile-emulate]
+</span><span style="color:#bf616a;">script </span><span>= &quot;</span><span style="color:#a3be8c;">RUSTFLAGS=${RUSTFLAGS_PI4} cargo objcopy --release --no-default-features --features emulator,rpi4  -- --strip-all -O binary target/kernel_2712.img</span><span>&quot;
+</span><span>
+</span><span>[tasks.sync]
+</span><span style="color:#bf616a;">dependencies </span><span>= [&quot;</span><span style="color:#a3be8c;">compile</span><span>&quot;]
+</span><span style="color:#bf616a;">command </span><span>= &quot;</span><span style="color:#a3be8c;">cp</span><span>&quot;
+</span><span style="color:#bf616a;">args </span><span>= [&quot;</span><span style="color:#a3be8c;">target/kernel_2712.img</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">/Volumes/bootfs/kernel_2712.img</span><span>&quot;]
+</span><span>
+</span><span>[tasks.emulate]
+</span><span style="color:#bf616a;">dependencies </span><span>= [&quot;</span><span style="color:#a3be8c;">compile-emulate</span><span>&quot;]
+</span><span style="color:#bf616a;">command </span><span>= &quot;</span><span style="color:#a3be8c;">qemu-system-aarch64</span><span>&quot;
+</span><span style="color:#bf616a;">args </span><span>= [
+</span><span>    &quot;</span><span style="color:#a3be8c;">-machine</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">raspi4b</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">-kernel</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">target/kernel_2712.img</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">-serial</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">stdio</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">-display</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">cocoa</span><span>&quot;,
+</span><span>]
+</span></code></pre>
+<p>Let's go over everything that's happening here section by section:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[env]
+</span><span style="color:#bf616a;">RUSTFLAGS </span><span>= &quot;</span><span style="color:#a3be8c;">-C target-cpu=cortex-a76 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld</span><span>&quot;
+</span><span style="color:#bf616a;">RUSTFLAGS_PI4 </span><span>= &quot;</span><span style="color:#a3be8c;">-C target-cpu=cortex-a72 -C link-arg=--library-path=src/motherboards/raspberrypi -C link-arg=--script=kernel.ld</span><span>&quot;
+</span></code></pre>
+<p>The <code>[env]</code> directive is used to setup environment variables that all make tasks can inherit from and pass into their execution scope.
+Here we define two variables called <code>RUSTFLAGS</code>. They are used to pass special configuration options to rustc during compilation. One is used when compiling for the Pi 4 and the other is used for the Pi 5.
+Next we have the compile tasks. These tasks are responsible for compiling the kernel into a raw image for either Pi 4 or Pi 5.</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[tasks.compile]
+</span><span style="color:#bf616a;">script </span><span>= &quot;</span><span style="color:#a3be8c;">RUSTFLAGS=${RUSTFLAGS} cargo objcopy --release  -- --strip-all -O binary target/kernel_2712.img</span><span>&quot;
+</span><span>
+</span><span>[tasks.compile-emulate]
+</span><span style="color:#bf616a;">script </span><span>= &quot;</span><span style="color:#a3be8c;">RUSTFLAGS=${RUSTFLAGS_PI4} cargo objcopy --release --no-default-features --features emulator,rpi4  -- --strip-all -O binary target/kernel_2712.img</span><span>&quot;
+</span></code></pre>
+<p>In one pass, cargo will first build the project, then run objcopy on the output and store the binary at the path we have provided. In the second task <code>compile-emulate</code>, we have added some features to customize the build output namely <code>emulator</code> and <code>rpi4</code>. You will see how we use these features later in the code but for now just understand that they allow us include or exclude some lines of code from the final output depending on which machine we are targeting. It is worth mentioning at this stage that this kernel was not tested on a physical raspberry pi 4 device, rather it was set up on QEMU raspi4. It was however tested on a physical raspberry pi 5 device.</p>
+<p>You can try to run it on a physical raspberry pi 4 without the <code>emulator</code> feature but I can't guarantee the success of your experiments in this direction. Of course if you run into any issues, leave a comment and I will respond with some advice on how to resolve them.</p>
+<p>Next we have the actual execution instructions for our operating system:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[tasks.sync]
+</span><span style="color:#bf616a;">dependencies </span><span>= [&quot;</span><span style="color:#a3be8c;">compile</span><span>&quot;]
+</span><span style="color:#bf616a;">command </span><span>= &quot;</span><span style="color:#a3be8c;">cp</span><span>&quot;
+</span><span style="color:#bf616a;">args </span><span>= [&quot;</span><span style="color:#a3be8c;">target/kernel_2712.img</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">/Volumes/bootfs/kernel_2712.img</span><span>&quot;]
+</span></code></pre>
+<p>The task named <code>sync</code> is used for copying the raw kernel image to a hard drive containing a raspberry pi installation. As you can see it depends on the <code>compile</code> task which compiles the raspberrypi 5 variant of our kernel. The process is pretty straightforward, burn a regular raspbian OS image to a drive or memory stick using Raspberry Pi Imager as you normally would. then update the above command such that it copies <code>kernel_2712.img</code> into the root of the drive. Afterwards all you need to do is stick it into a physical Raspberry Pi 5 device and voila! You have your OS running; obviously not at this stage because we have not written any actual OS code.</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[tasks.emulate]
+</span><span style="color:#bf616a;">dependencies </span><span>= [&quot;</span><span style="color:#a3be8c;">compile-emulate</span><span>&quot;]
+</span><span style="color:#bf616a;">command </span><span>= &quot;</span><span style="color:#a3be8c;">qemu-system-aarch64</span><span>&quot;
+</span><span style="color:#bf616a;">args </span><span>= [
+</span><span>    &quot;</span><span style="color:#a3be8c;">-machine</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">raspi4b</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">-kernel</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">target/kernel_2712.img</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">-serial</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">stdio</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">-display</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">cocoa</span><span>&quot;,
+</span><span>]
+</span></code></pre>
+<p>The task named <code>emulate</code> is used for spinning up a QEMU emulator running our raw kernel image. As per our configuration, it depends on <code>compile-emulate</code> task which compiles the raspberrypi4 variant of our kernel.</p>
+<p>For fast iterative development, using the emulator is preferred but if you think plugging and unplugging a memory stick every time you want to test your changes is exciting then I am not going to stop you. Either approach will work with this tutorial, I have made sure of that.</p>
+<h2 id="building-the-foundation">Building the Foundation</h2>
+<p>Okay now that we have our project setup, let us discuss one of the most fundamental concepts in building an operating system, the entry point. When writing any kind of program, Your code needs to be loaded into a particular memory location in order for the CPU to start executing it. This is true for any kind of program not just operating systems. In higher level Rust, we define <code>fn main()</code> and that becomes the entry point of the program but the only reason this works is because the compiler is designed to output object code placing the start of the main function at a memory location where the CPU is expecting it to be. In lower level environments like the one we are currently working in, we have to do everything manually. We have to configure our kernel so that the entry point is located where the CPU will be looking for code to execute. If we don't do this then the CPU cannot run the kernel.</p>
+<p>So let's update <code>src/main.rs</code> to something more befitting of a low level project:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#![</span><span style="color:#bf616a;">no_std</span><span>]
+</span><span>#![</span><span style="color:#bf616a;">no_main</span><span>]
+</span><span>#![</span><span style="color:#bf616a;">allow</span><span>(internal_features)]
+</span><span>#![</span><span style="color:#bf616a;">feature</span><span>(lang_items)]
+</span></code></pre>
+<p>The first directive <code>no_std</code> simply tells the compiler that we want to build a freestanding binary without linking in the Rust standard library. Then <code>no_main</code> allows us compile code that does not explicitly define a <code>fn main()</code>. Like I said we are taking full control so the training wheels come off at this point. The next directive <code>allow(internal_features)</code> is just a lint ignore that allows us to use the last directive <code>feature(lang_items)</code> which is a special nightly feature gate (hence the nightly toolchain we installed at the beginning) that allows us to supply important behavior (like error handling) needed by the compiler in specific scenarios now that we are abandoning the training wheels.</p>
+<p>You should be getting an annoying error from rust-analyzer:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>can&#39;t find crate for `test`
+</span></code></pre>
+<p>To fix it, go into <code>Cargo.toml</code> and add the following lines to what is already there:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[[bin]]
+</span><span style="color:#bf616a;">name </span><span>= &quot;</span><span style="color:#a3be8c;">op_sys</span><span>&quot;
+</span><span style="color:#bf616a;">path </span><span>= &quot;</span><span style="color:#a3be8c;">src/main.rs</span><span>&quot;
+</span><span style="color:#bf616a;">test </span><span>= </span><span style="color:#d08770;">false
+</span><span style="color:#bf616a;">bench </span><span>= </span><span style="color:#d08770;">false
+</span><span>
+</span><span>[profile.dev]
+</span><span style="color:#bf616a;">panic </span><span>= &quot;</span><span style="color:#a3be8c;">abort</span><span>&quot;
+</span><span>
+</span><span>[profile.release]
+</span><span style="color:#bf616a;">lto </span><span>= </span><span style="color:#d08770;">true
+</span><span style="color:#bf616a;">panic </span><span>= &quot;</span><span style="color:#a3be8c;">abort</span><span>&quot;
+</span></code></pre>
+<p>You see what we have just done is configure an explicit binary for our low level needs. We disabled test and bench so the compiler doesn't bootstrap the testing and benchmarking harnesses into our binary. We won't be needing that for our kernel anyways. Let's run cargo check to see if the coast is clear!</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>error: `#[panic_handler]` function required, but not found
+</span></code></pre>
+<p>Well the error is quite descriptive. Our dear compiler dumped std and put all its faith in us. Now we need to provide it with all the language items that it needs to function properly.</p>
+<p>Create a new file <code>src/panic_cfg.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>core::panic::PanicInfo;
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">panic_handler</span><span>]
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">panic</span><span>(</span><span style="color:#bf616a;">_info</span><span>: &amp;PanicInfo) -&gt; ! {}
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">lang </span><span>= &quot;</span><span style="color:#a3be8c;">eh_personality</span><span>&quot;]
+</span><span style="color:#b48ead;">extern </span><span>&quot;</span><span style="color:#a3be8c;">C</span><span>&quot; </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">eh_personality</span><span>() {}
+</span></code></pre>
+<p>Then add the module to <code>src/main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>panic_cfg;
+</span></code></pre>
+<p>Now we need to implement the panic handler. remove the dependencies section in <code>Cargo.toml</code> and replace it with:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[target.&#39;</span><span style="color:#a3be8c;">cfg(target_arch = &quot;aarch64&quot;)</span><span>&#39;.dependencies]
+</span><span style="color:#bf616a;">aarch64-cpu </span><span>= { </span><span style="color:#bf616a;">version </span><span>= &quot;</span><span style="color:#a3be8c;">9.x.x</span><span>&quot; }
+</span></code></pre>
+<p>This adds a new crate with which we can conveniently run Aarch64 CPU instructions from Rust land in a rusty way. For the first time, we are going to write code which is expected to run on only one CPU architecture, aarch64. We will structure our code so that we can easily extend the operating system to work on a matrix of CPUs and Motherboards.</p>
+<p>Create a new file <code>src/processors/aarch64/cpu.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>aarch64_cpu::asm;
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">wait_forever</span><span>() -&gt; ! {
+</span><span>    </span><span style="color:#b48ead;">loop </span><span>{
+</span><span>        asm::wfe()
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>This function is really simple, it loops forever but with an interesting twist; it calls the <code>Wait-For-Event</code> instruction in ASM in order to optimize the forever loop so that the processor can go into a low power sleep mode until an event is received. Let's link this file into the rest of our crate and use it in our panic handler.</p>
+<p>Create a file <code>src/processors/aarch64/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub mod </span><span>cpu;
+</span></code></pre>
+<p>Then create <code>src/processors/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>aarch64;
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">cfg</span><span>(target_arch = &quot;</span><span style="color:#a3be8c;">aarch64</span><span>&quot;)]
+</span><span style="color:#b48ead;">pub use </span><span>aarch64::cpu::wait_forever;
+</span></code></pre>
+<p>Most of the code we are going to write will be either specific to a CPU type or specific to a motherboard so we will be doing this kind of modularization from the start so that our code is well organized and maintainable.</p>
+<p>Finally, add the following content to <code>src/main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>processors;
+</span></code></pre>
+<p>We can go back to <code>panic_cfg.rs</code> and update the implementation of <code>fn panic()</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">panic_handler</span><span>]
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">panic</span><span>(</span><span style="color:#bf616a;">_info</span><span>: &amp;PanicInfo) -&gt; ! {
+</span><span>    </span><span style="color:#b48ead;">crate</span><span>::processors::wait_forever()
+</span><span>}
+</span></code></pre>
+<p>At this point, <code>cargo check</code> is no longer failing and if we run <code>cargo build</code> it succeeds with a warning:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>warning: linker stderr: rust-lld: cannot find entry symbol _start; not setting start address
+</span></code></pre>
+<p>Bro is looking for a way in but we have not provided any.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The binary is pretty much useless without a recognizable entry point but we have one foot in the door now. In <a href="https://iambenkay.com/building-an-operating-system-in-rust-part-2/">Part 2 we are going to be implementing an entry point for our kernel</a></p>
+</div>
+
+
+<!-- Divider -->
+<hr class="border-zinc-200 dark:border-zinc-800 my-10" />
+
+<!-- Comments -->
+<section>
+    <p
+        class="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-6"
+    >
+        Discussion
+    </p>
+    <script
+        src="https://utteranc.es/client.js"
+        repo="iambenkay/iambenkay.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async
+    ></script>
+</section>
+
+<script>
+    // Switch utterances theme with dark mode
+    function syncUtterancesTheme() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const frame = document.querySelector(".utterances-frame");
+        if (frame) {
+            frame.contentWindow.postMessage(
+                {
+                    type: "set-theme",
+                    theme: isDark ? "github-dark" : "github-light",
+                },
+                "https://utteranc.es",
+            );
+        }
+    }
+
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        setTimeout(syncUtterancesTheme, 50);
+    });
+
+    window.addEventListener("message", (e) => {
+        if (
+            e.origin === "https://utteranc.es" &&
+            e.data &&
+            e.data.type === "resize"
+        ) {
+            syncUtterancesTheme();
+        }
+    });
+
+    function loadCopyButtons() {
+        document.querySelectorAll("pre").forEach((block) => {
+            const btn = document.createElement("div");
+            btn.textContent = "Copy";
+            btn.classList.add(
+                "absolute",
+                "top-2",
+                "right-2",
+                "bg-white/10",
+                "cursor-pointer",
+                "rounded",
+                "px-2",
+                "py-0.5",
+                "text-xs",
+                "text-zinc-300",
+                "hover:bg-white/20",
+                "transition-colors",
+            );
+            block.style.position = "relative";
+            block.appendChild(btn);
+            btn.addEventListener("click", () => {
+                navigator.clipboard.writeText(
+                    block.querySelector("code").textContent.trimEnd(),
+                );
+                btn.textContent = "Copied!";
+                setTimeout(() => {
+                    btn.textContent = "Copy";
+                }, 2000);
+            });
+        });
+    }
+
+    loadCopyButtons();
+</script>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-zinc-200 dark:border-zinc-800 mt-16">
+            <div
+                class="max-w-3xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-end gap-2 text-sm text-zinc-500 dark:text-zinc-500"
+            >
+                <span>© 2026 Benjamin Chibuzor-Orie</span>
+            </div>
+        </footer>
+
+        <script>
+            // Dark mode toggle
+            const html = document.documentElement;
+            const toggle = document.getElementById("theme-toggle");
+            const sun = document.getElementById("icon-sun");
+            const moon = document.getElementById("icon-moon");
+
+            function applyTheme(dark) {
+                html.classList.toggle("dark", dark);
+                sun.classList.toggle("hidden", !dark);
+                moon.classList.toggle("hidden", dark);
+            }
+
+            const stored = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia(
+                "(prefers-color-scheme: dark)",
+            ).matches;
+            applyTheme(stored === "dark" || (!stored && prefersDark));
+
+            toggle.addEventListener("click", () => {
+                const isDark = html.classList.contains("dark");
+                applyTheme(!isDark);
+                localStorage.setItem("theme", isDark ? "light" : "dark");
+            });
+        </script>
+
+        <script type="module">
+            import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/+esm";
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyDbmff0_NioNCGzbRl_E_ldtXbxQIcpcJs",
+                authDomain: "benkay-blog.firebaseapp.com",
+                projectId: "benkay-blog",
+                storageBucket: "benkay-blog.firebasestorage.app",
+                messagingSenderId: "880946931838",
+                appId: "1:880946931838:web:9a0899015b0ca6eadd902f",
+                measurementId: "G-LPDNWEQSQK",
+            };
+
+            if (window.location.hostname !== "localhost") {
+                const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app);
+            }
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    </body>
+</html>

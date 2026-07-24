@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en" class="">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        
+<title>Building an Operating System In Rust Part 2 — Benjamin Chibuzor-Orie</title>
+<link rel="canonical" href="https://iambenkay.com/building-an-operating-system-in-rust-part-2/" />
+<meta property="og:title" content="Building an Operating System In Rust Part 2" />
+<meta property="og:description" content="When running programs on an existing operating system, there are a lot of things that are handled under the hood for us by the operating system. They are invisible to us and we take them for granted, we expect them to just work. In kernel space there are no training wheels" />
+<meta property="og:image" content="&#x2F;images&#x2F;header-rust.jpg" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https:&#x2F;&#x2F;iambenkay.com&#x2F;building-an-operating-system-in-rust-part-2&#x2F;" />
+<meta property="article:published_time" content="2026-06-19" />
+<meta property="article:section" content="Programming" />
+
+<meta property="article:tag" content="Rust" />
+
+<meta property="article:tag" content="Operating System" />
+
+<meta property="article:tag" content="Low Level" />
+ 
+        <link href="/markdown.css" rel="stylesheet" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+            };
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,600;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "Inter", sans-serif;
+            }
+            .font-serif {
+                font-family: "Lora", serif;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-200"
+    >
+        <!-- Nav -->
+        <header
+            class="border-b border-zinc-200 dark:border-zinc-800 bg-stone-50/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10"
+        >
+            <div
+                class="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between"
+            >
+                <a href="/" class="flex items-center gap-2.5 group min-w-0">
+                    <div
+                        class="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+                    >
+                        B
+                    </div>
+                    <span
+                        class="font-semibold text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors truncate"
+                        >Benjamin Chibuzor-Orie</span
+                    >
+                </a>
+                <button
+                    id="theme-toggle"
+                    aria-label="Toggle dark mode"
+                    class="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg
+                        id="icon-sun"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="hidden w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z"
+                        />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg
+                        id="icon-moon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
+                        />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto px-6 py-10">
+            
+
+<!-- Back link -->
+<a
+    href="javascript:history.back()"
+    class="inline-flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mb-8"
+>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+    >
+        <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M7 16l-4-4m0 0l4-4m-4 4h18"
+        />
+    </svg>
+    Back
+</a>
+
+<!-- Tags -->
+
+<div class="flex flex-wrap gap-2 mb-4">
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Rust
+    </span>
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Operating System
+    </span>
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Low Level
+    </span>
+    
+</div>
+
+
+<!-- Title -->
+<h1
+    class="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight"
+>
+    Building an Operating System In Rust Part 2
+</h1>
+
+<!-- Byline -->
+<div class="flex items-center gap-3 mt-5">
+    <div
+        class="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+    >
+        B
+    </div>
+    <div>
+        <p class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            Benjamin Chibuzor-Orie
+        </p>
+        <div
+            class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-400 dark:text-zinc-500"
+        >
+            
+            <time>June 19, 2026</time>
+             
+            <span>·</span>
+            <span>3193 words</span>
+            <span>·</span>
+            <span>16 min read</span>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Hero image -->
+
+<img
+    loading="lazy"
+    src="https:&#x2F;&#x2F;iambenkay.com&#x2F;processed_images&#x2F;header-rust.40d8abec8dd4909a.jpg"
+    alt="Rust"
+    class="mt-8 w-full rounded-2xl object-cover object-center border border-zinc-100 dark:border-zinc-800 shadow-sm"
+/>
+
+<!-- Article body -->
+<div id="blog-body" class="markdown mt-10 mb-12"><p>In <a href="https://iambenkay.com/building-an-operating-system-in-rust-part-1/">Part 1 we built the foundation of our operating system using Rust</a>, dove deep into murky low level waters and broke free from the shackles of stdlib while still keeping the compiler happy. Now we are going into the meat of it all - the entry point.</p>
+<p>Feel free to clone the <a href="https://github.com/iambenkay/kluster/tree/part-2" target="_blank" rel="noopener">source code for part 2</a> from Github and follow along.</p>
+<h2 id="prepare-for-entry">Prepare for Entry</h2>
+<p>When running programs on an operating system, there are a lot of things that are handled under the hood for us by the operating system. They are invisible to us and we take them for granted, we expect them to just work. In kernel space however, there are no training wheels, no invisible cogs turning in the background, everything is laid bare for us to see. Everything that works does so because we made it happen. It may sound overwhelming but it's this kind of foundational control that makes you truly appreciate how computers work at the lowest level.</p>
+<p>At the lowest level, the way a CPU executes instructions is very different from the mental model that high level languages try to paint. If you are familiar with assembly then you already know this. Let's look at some core concepts you need to know in order to fully get into the vibe of low level program execution:</p>
+<h3 id="register">Register</h3>
+<p>Registers are ultra-fast, small-capacity temporary storage locations built directly into the CPU. They hold the exact data, instructions, or memory addresses the processor is currently working with, acting as the CPU’s immediate "scratchpad" before calculations are sent to the cache or main memory (RAM). There are general purpose registers and registers designed to perform a specific task.</p>
+<h3 id="execution-stack">Execution stack</h3>
+<p>As instructions execute, the stack is a LIFO data structure used to keep track of the execution context which may include local variables, function parameters or return addresses.</p>
+<h3 id="stack-pointer">Stack pointer</h3>
+<p>The stack pointer is a special CPU register that automatically tracks the top of the execution stack. In Aarch64, the stack grows downward, so logically it tracks the bottom of the stack pointer but the idea remains the same. When the CPU pushes into the stack, the stack pointer gets decremented and the entry is written to that address where the stack is pointing to. When the CPU pops from the stack, it reads the entry at the current stack pointer and then increments the stack pointer effectively freeing the previous memory slot.
+<center>
+    <span class="mermaid">flowchart LR
+subgraph Stack [Execution Stack]
+Item1["Address: 0x000F"]
+Item2["Address: 0x000E"]
+Item3["Address: 0x000D"]
+Item4["Address: 0x000C"]
+end
+
+    SP["Stack Pointer"] --> Item4
+
+    style Stack fill:#ffffff, stroke: #000, stroke-width: 1px, gap: 0
+    style Item4 fill:#ff9999
+    style SP fill: #000, color: #fff</span>
+</center>
+</p>
+<h3 id="instruction">Instruction</h3>
+<p>An instruction is the smallest unit of work that can be performed by a CPU. It takes one or more operands and stores it's result in a register depending on the operation. There are tons of instructions built into a CPU to perform almost any operation you can think of and it varies from CPU to CPU so you have to learn the Instruction Set of the CPU you are working with if you want to write Assembly for it.</p>
+<h3 id="program-counter">Program Counter</h3>
+<p>The program counter is a special CPU register that always contains the memory location of the next instruction to execute. As soon as the CPU finishes executing an instruction it checks the program counter and goes on to execute the instruction at the location stored in the program counter. After the CPU reads the program counter, the program counter gets incremented to point to the next instruction and the cycle continues.</p>
+<h2 id="implementing-the-boot-image">Implementing the boot image</h2>
+<p>Now that we have a foundational understanding of the building blocks, let's write some assembly code for booting into our kernel. I know I promised we will write as much Rust as possible but this is one of those scenarios where Rust does not cut it. This part of the process cannot be handled by Rust because Rust expects a stack pointer to have already been set up so it is a chicken and egg problem. Remember, the training wheels are off and everything is being done manually so this is one time when we will have to drop down to Assembly in order to configure our entrypoint. This is a delicate point so I want you to pay as much attention as you can afford to.</p>
+<p>For your information, any code related to the entrypoint of a kernel is called the boot code. We will be writing the our boot code, or as I prefer to call it "boot image", in a bit but let us first structure our crate.</p>
+<p>Let's create a main function for our kernel in a new file <code>src/kernel.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">main</span><span>() -&gt; ! {
+</span><span>    </span><span style="color:#b48ead;">loop </span><span>{}
+</span><span>}
+</span></code></pre>
+<p>This function will be called from our entrypoint and will handle all our kernel code but for now it just runs an infinite loop. Load this module in <code>src/main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>kernel;
+</span></code></pre>
+<p>Create a file <code>src/processors/aarch64/bootimage.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>core::arch::global_asm;
+</span><span>
+</span><span>global_asm!(
+</span><span>    include_str!(&quot;</span><span style="color:#a3be8c;">boot.S</span><span>&quot;),
+</span><span>    </span><span style="color:#d08770;">CONST_CORE_ID_MASK </span><span>= </span><span style="color:#b48ead;">const </span><span style="color:#d08770;">0b11
+</span><span>);
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">unsafe</span><span>(no_mangle)]
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">_start_rust</span><span>() -&gt; ! {
+</span><span>    </span><span style="color:#b48ead;">crate</span><span>::kernel::main()
+</span><span>}
+</span></code></pre>
+<p>This is processor specific code. In this case it is expected to run only on aarch64 cpus. We load some assembly from the file <code>boot.S</code> substituting a variable <code>CONST_CORE_ID_MASK</code> in the assembly with the value <code>0b11</code>. Then we define <code>fn _start_rust()</code> which will serve as the first point of contact between assembly land and rust land. It calls our kernel main which we defined earlier. Note the <code>no_mangle</code> directive. It is required in order for the name of the function to not become scrambled during compilation since we will be calling the function from Assembly.</p>
+<p>Then load the module in <code>src/processors/aarch64/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>bootimage;
+</span></code></pre>
+<p>Add the following content to <code>src/processors/aarch64/boot.S</code>:</p>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span style="color:#65737e;">//--------------------------------------------------------------------------------------------------
+</span><span style="color:#65737e;">// Definitions
+</span><span style="color:#65737e;">//--------------------------------------------------------------------------------------------------
+</span><span>
+</span><span style="color:#65737e;">// Load the address of a symbol into a register, PC-relative.
+</span><span style="color:#65737e;">//
+</span><span style="color:#65737e;">// The symbol must lie within +/- 4 GiB of the Program Counter.
+</span><span>.macro ADR_REL register, symbol
+</span><span>	adrp	\register, \symbol
+</span><span>	</span><span style="color:#96b5b4;">add</span><span>	\register, \register, #:lo12:\symbol
+</span><span>.endm
+</span><span>
+</span><span style="color:#65737e;">//--------------------------------------------------------------------------------------------------
+</span><span style="color:#65737e;">// Public Code
+</span><span style="color:#65737e;">//--------------------------------------------------------------------------------------------------
+</span><span>.section .</span><span style="color:#96b5b4;">text</span><span>._start
+</span><span>
+</span><span style="color:#65737e;">//------------------------------------------------------------------------------
+</span><span style="color:#65737e;">// fn _start()
+</span><span style="color:#65737e;">//------------------------------------------------------------------------------
+</span><span>_start:
+</span><span>	</span><span style="color:#65737e;">// Only proceed on the boot core. Park it otherwise.
+</span><span>	mrs	x0, MPIDR_EL1
+</span><span>	</span><span style="color:#96b5b4;">and</span><span>	x0, x0, {CONST_CORE_ID_MASK}
+</span><span>	ldr	x1, BOOT_CORE_ID      </span><span style="color:#65737e;">// provided by __board__/&lt;board_name&gt;/cpu.rs
+</span><span>	cmp	x0, x1
+</span><span>	bne	.L_parking_loop
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// If execution reaches here, it is the boot core.
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// Initialize DRAM.
+</span><span>	ADR_REL	x0, __bss_start
+</span><span>	ADR_REL x1, __bss_end_exclusive
+</span><span>
+</span><span>.L_bss_init_loop:
+</span><span>	cmp	x0, x1
+</span><span>	beq	.L_prepare_rust
+</span><span>	stp	xzr, xzr, [x0], #</span><span style="color:#d08770;">16
+</span><span>	b	.L_bss_init_loop
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// Prepare the jump to Rust code.
+</span><span>.L_prepare_rust:
+</span><span>	</span><span style="color:#65737e;">// Set the stack pointer.
+</span><span>	ADR_REL	x0, __boot_core_stack_end_exclusive
+</span><span>	mov	sp, x0
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// Jump to Rust code.
+</span><span>	b	_start_rust
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// Infinitely wait for events (aka &quot;park the core&quot;).
+</span><span>.L_parking_loop:
+</span><span>	wfe
+</span><span>	b	.L_parking_loop
+</span><span>
+</span><span>.</span><span style="color:#96b5b4;">size</span><span>	_start, . - _start
+</span><span>.</span><span style="color:#96b5b4;">type</span><span>	_start, function
+</span><span>.</span><span style="color:#96b5b4;">global</span><span>	_start
+</span></code></pre>
+<p>Whoa! That's a huge chunk of foreign code. Lucky you, I can demystify what's going on there. Let's take it apart line by line.</p>
+<h3 id="assembly-breakdown">Assembly Breakdown</h3>
+<h4 id="the-adr-rel-macro">The ADR_REL macro</h4>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span>.macro ADR_REL register, symbol
+</span><span>	adrp	\register, \symbol
+</span><span>	</span><span style="color:#96b5b4;">add</span><span>	\register, \register, #:lo12:\symbol
+</span><span>.endm
+</span></code></pre>
+<p>This is a two-instruction helper that loads the address of a symbol into a register in a PC-relative way (relative to the program counter, no absolute addressing, so the code works regardless of where it's loaded as long as the symbol is within ±4 GiB).</p>
+<ol>
+<li><strong>adrp</strong> ("Address of Page") computes the 4 KiB-aligned page address containing the symbol, relative to the PC. So it gets you within 4 KiB of the symbol.</li>
+<li><strong>add</strong> … <code>#:lo12:symbol</code> adds the low 12 bits of the symbol's address (the offset within the page) to finish the address.
+Together they materialize an arbitrary symbol address with two instructions and no memory load. This matters because the BSS hasn't been zeroed yet and the stack isn't set; we can't yet rely on memory loads of address tables.</li>
+</ol>
+<p>Let's use a practical example, Assume the Program Counter is at <code>0x00BC3000</code>. We want to get the PC relative address of a symbol <code>msg</code> which for the sake of this example is stored at <code>0x00BC5B70</code>. The question that this macro answers is how to get that symbol's address into a register. First we get the page address of the symbol relative to the program counter. The way this works is by finding which 4KiB slice (called a page) the symbol's address falls into:
+<center>
+    <span class="mermaid">flowchart LR
+subgraph Memory
+Page1["Page 1: 0x00BC3000 to 0x00BC3FFF"]
+Page2["Page 2: 0x00BC4000 to 0x00BC4FFF"]
+Page3["Page 3: 0x00BC5000 to 0x00BC5FFF"]
+Page4["Page 4: 0x00BC6000 to 0x00BC6FFF"]
+Page5["Page 5: 0x00BC7000 to 0x00BC7FFF"]
+end
+
+Msg["msg"]-- in this page --> Page3</span>
+</center>
+
+So we know that the symbol is 3 pages away from the program counter. Next we get the lower 12 bits of the symbol's address using <code>#:lo12:\symbol</code>. Under the hood, this operation does this:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#d08770;">0x00BC5B70 </span><span>&amp; </span><span style="color:#d08770;">0xFFF </span><span>= </span><span style="color:#d08770;">0xB70 </span><span style="color:#65737e;">// retains only the lower 12 bits
+</span></code></pre>
+<p>Then we add the result to the page address to get the symbol address:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#d08770;">0x00BC5000 </span><span>+ </span><span style="color:#d08770;">0xB70 </span><span>= </span><span style="color:#d08770;">0x00BC5B70 </span><span style="color:#65737e;">// returned by ADR_REL macro
+</span></code></pre>
+<h4 id="code-section">Code section</h4>
+<p>Assembly code is organized into sections. Each section contains a sequence of instructions and directives that define a logical unit of our program. The following labels a new section named <code>.text._start</code> which is the start of our code for this module:</p>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span style="color:#65737e;">//--------------------------------------------------------------------------------------------------
+</span><span style="color:#65737e;">// Public Code
+</span><span style="color:#65737e;">//--------------------------------------------------------------------------------------------------
+</span><span>.section .</span><span style="color:#96b5b4;">text</span><span>._start
+</span></code></pre>
+<h4 id="boot-into-primary-cpu-core">Boot into primary CPU core</h4>
+<p>The next piece of code is responsible for selecting one of the available cores as our primary core and parking the remaining cores. By default all the CPU cores will pick up the kernel and try to run it so this is a crucial step to disqualify all but one, our primary core.</p>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span>_start:
+</span><span>    mrs   x0, MPIDR_EL1
+</span><span>    </span><span style="color:#96b5b4;">and</span><span>   x0, x0, {CONST_CORE_ID_MASK}
+</span><span>    ldr   x1, BOOT_CORE_ID
+</span><span>    cmp   x0, x1
+</span><span>    bne   .L_parking_loop
+</span></code></pre>
+<p>It starts by reading the value of the Multiprocessor Affinity Register, <code>MPIDR_EL1</code> into register <code>x0</code>. The system register <code>MPIDR_EL1</code> identifies which CPU we're on, specifically the low bits which contain the core number. Assuming we are on raspberry pi 4 or 5 then there are only 4 CPUs available which can be represented with two bits. So the value of <code>MPIDR_EL1</code> may look like this on the different cores:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Core 1 - 01110000
+</span><span>Core 2 - 01110001
+</span><span>Core 3 - 01110010
+</span><span>Core 4 - 01110011
+</span></code></pre>
+<p>so we need a mask that can select only the last two bits of this register value and that mask is <code>0b11</code> because we can take any of the values and <code>AND</code> them with this mask to retrieve the last two bits:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#d08770;">0b01110000 </span><span>&amp; </span><span style="color:#d08770;">0b11 </span><span>= </span><span style="color:#d08770;">0b00
+</span><span style="color:#d08770;">0b01110001 </span><span>&amp; </span><span style="color:#d08770;">0b11 </span><span>= </span><span style="color:#d08770;">0b01
+</span><span style="color:#d08770;">0b01110010 </span><span>&amp; </span><span style="color:#d08770;">0b11 </span><span>= </span><span style="color:#d08770;">0b10
+</span><span style="color:#d08770;">0b01110011 </span><span>&amp; </span><span style="color:#d08770;">0b11 </span><span>= </span><span style="color:#d08770;">0b11
+</span></code></pre>
+<p>We defined the mask <code>CONST_CORE_ID_MASK</code> a while ago in <code>src/processors/aarch64/bootimage.rs</code> and this is where it gets used. Depending on the board we are running on we can change this mask to <code>0b111</code> to support up to 7 cores or <code>0b1111</code> to support up to 15 cores.</p>
+<p>Next, we load the value of the variable <code>BOOT_CORE_ID</code> (which we will define soon in Rust) and store that in the register <code>x1</code>. At this point <code>x0</code> contains the CPU number which the code is currently executing on and <code>x1</code> contains the target CPU we want to take control while parking the rest. We compare their values and branch to the parking logic if <code>x0</code> is not equal to <code>x1</code>, else we continue execution.</p>
+<p>Before we continue describing our startup logic, let's define the <code>BOOT_CORE_ID</code> variable that we used above. Create a file <code>src/motherboards/raspberrypi/cpu.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">cfg</span><span>(target_arch = &quot;</span><span style="color:#a3be8c;">aarch64</span><span>&quot;)]
+</span><span>#[</span><span style="color:#bf616a;">unsafe</span><span>(no_mangle)]
+</span><span>#[</span><span style="color:#bf616a;">unsafe</span><span>(link_section = &quot;</span><span style="color:#a3be8c;">.text._start_arguments</span><span>&quot;)]
+</span><span style="color:#b48ead;">pub static </span><span style="color:#d08770;">BOOT_CORE_ID</span><span>: </span><span style="color:#b48ead;">u64 </span><span>= </span><span style="color:#d08770;">0</span><span>;
+</span></code></pre>
+<p><code>link_section = ".text._start_arguments"</code> adds a new section labelled <code>.text._start_arguments</code> and the variable <code>BOOT_CORE_ID</code> in that section. We are keeping the value as <code>0</code> because we want to boot into the first core as our primary core.</p>
+<p>Create another file <code>src/motherboards/raspberrypi/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>cpu;
+</span></code></pre>
+<p>Then another file <code>src/motherboards/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub mod </span><span>raspberrypi;
+</span></code></pre>
+<p>and then add the module to <code>src/main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>motherboards;
+</span></code></pre>
+<h4 id="initialize-bss">Initialize BSS</h4>
+<p>The BSS is a data segment that stores uninitialized global and static variables. At startup we need to zero all the addresses within the BSS in preparation for uninitialized variables that will be stored in this segment. The following segment handles this:</p>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span>	</span><span style="color:#65737e;">// If execution reaches here, it is the boot core.
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// Initialize DRAM.
+</span><span>	ADR_REL	x0, __bss_start
+</span><span>	ADR_REL x1, __bss_end_exclusive
+</span><span>
+</span><span>.L_bss_init_loop:
+</span><span>	cmp	x0, x1
+</span><span>	beq	.L_prepare_rust
+</span><span>	stp	xzr, xzr, [x0], #</span><span style="color:#d08770;">16
+</span><span>	b	.L_bss_init_loop
+</span></code></pre>
+<p>This is a simple routine that loads the start and end of the BSS into <code>x0</code> and <code>x1</code> using the symbols <code>__bss_start</code> and <code>__bss_end_exclusive</code> (will be defined later in the linker script). Then we recursively store zeroes in the memory locations stored in <code>x0</code> and increment the memory location stored in <code>x0</code> by <code>16</code>. This continues until the memory location in <code>x0</code> matches the end of bss stored in <code>x1</code> then we branch to <code>.L_prepare_rust</code>.</p>
+<h4 id="jumping-into-rust-land">Jumping into Rust land</h4>
+<p>The next piece of code is the bridge into our Rust code:</p>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span style="color:#65737e;">// Prepare the jump to Rust code.
+</span><span>.L_prepare_rust:
+</span><span>	</span><span style="color:#65737e;">// Set the stack pointer.
+</span><span>	ADR_REL	x0, __boot_core_stack_end_exclusive
+</span><span>	mov	sp, x0
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// Jump to Rust code.
+</span><span>	b	_start_rust
+</span></code></pre>
+<p>First we store the address of the end of the stack (configured later in the linker script) in <code>x0</code>. Then we set the value of the stack pointer register to that address. Finally we branch to the label for our Rust entry point (defined in <code>src/processors/aarch64/bootimage.rs</code>).</p>
+<p>The next piece of code just defines the label for our parking loop so the other cores know what to do after being disqualified from running the kernel:</p>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span style="color:#65737e;">// Infinitely wait for events (aka &quot;park the core&quot;).
+</span><span>.L_parking_loop:
+</span><span>	wfe
+</span><span>	b	.L_parking_loop
+</span></code></pre>
+<p>Lastly, we define some metadata for this assembly module at the very end:</p>
+<pre data-lang="as" style="background-color:#2b303b;color:#c0c5ce;" class="language-as "><code class="language-as" data-lang="as"><span>.</span><span style="color:#96b5b4;">size</span><span>	_start, . - _start
+</span><span>.</span><span style="color:#96b5b4;">type</span><span>	_start, function
+</span><span>.</span><span style="color:#96b5b4;">global</span><span>	_start
+</span></code></pre>
+<p>The first directive <code>.size</code> computes the size of the routine <code>_start</code>. The second directive <code>.type</code> specifies the type of <code>_start</code> which is a function. The last directive <code>.global</code> makes the <code>_start</code> label a global entity which can be referenced by other libraries.</p>
+<p>Summarily, here is the boot flow:
+<center>
+    <span class="mermaid">flowchart TD
+A["Firmware loads kernel"] --> B["_start<br/>(boot.S, .text._start)"]
+B --> C{"core == 0?"}
+C -- "no" --> D["wfe loop forever"]
+C -- "yes" --> E["Zero BSS<br/>(__bss_start .. __bss_end_exclusive)"]
+E --> F["sp = __boot_core_stack_end_exclusive"]
+F --> G["b _start_rust"]
+G --> H["_start_rust<br/>(bootimage.rs)"]
+H --> I["kernel::main()"]</span>
+</center>
+</p>
+<p>We have implemented our boot image in pure Assembly. I hope you enjoyed that! One last important step before we can run our kernel for the first time is Linking.</p>
+<h3 id="writing-the-linker-script">Writing the Linker Script</h3>
+<p>Linking is the glue for everything we have done. A linker is responsible for taking both the assembly code and the Rust code and linking them into one binary but we have to explicitly tell the linker how we want our code to be organized; we have to define the memory layout for our binary!</p>
+<p>Create the file <code>src/motherboards/raspberrypi/kernel.ld</code> and add the following content:</p>
+<pre data-lang="ld" style="background-color:#2b303b;color:#c0c5ce;" class="language-ld "><code class="language-ld" data-lang="ld"><span style="color:#bf616a;">__rpi_phys_dram_start_addr</span><span> = </span><span style="color:#d08770;">0</span><span>;
+</span><span>
+</span><span style="color:#65737e;">/* The physical address at which the the kernel binary will be loaded by the Raspberry&#39;s firmware */
+</span><span style="color:#bf616a;">__rpi_phys_binary_load_addr</span><span> = </span><span style="color:#d08770;">0x80000</span><span>;
+</span><span>
+</span><span>
+</span><span style="color:#b48ead;">ENTRY</span><span>(</span><span style="color:#bf616a;">__rpi_phys_binary_load_addr</span><span>)
+</span><span>
+</span><span style="color:#65737e;">/* Flags:
+</span><span style="color:#65737e;"> *     4 == R
+</span><span style="color:#65737e;"> *     5 == RX
+</span><span style="color:#65737e;"> *     6 == RW
+</span><span style="color:#65737e;"> *
+</span><span style="color:#65737e;"> * Segments are marked PT_LOAD below so that the ELF file provides virtual and physical addresses.
+</span><span style="color:#65737e;"> * It doesn&#39;t mean all of them need actually be loaded.
+</span><span style="color:#65737e;"> */
+</span><span style="color:#bf616a;">PHDRS
+</span><span>{
+</span><span>    </span><span style="color:#bf616a;">segment_boot_core_stack PT_LOAD FLAGS</span><span>(</span><span style="color:#d08770;">6</span><span>);
+</span><span>    </span><span style="color:#bf616a;">segment_code            PT_LOAD FLAGS</span><span>(</span><span style="color:#d08770;">5</span><span>);
+</span><span>    </span><span style="color:#bf616a;">segment_data            PT_LOAD FLAGS</span><span>(</span><span style="color:#d08770;">6</span><span>);
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">SECTIONS
+</span><span>{
+</span><span>    </span><span style="color:#bf616a;">.</span><span> =  </span><span style="color:#bf616a;">__rpi_phys_dram_start_addr</span><span>;
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Boot Core Stack
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.boot_core_stack</span><span> (</span><span style="color:#bf616a;">NOLOAD</span><span>) :
+</span><span>    {
+</span><span>                                             </span><span style="color:#65737e;">/*   ^             */
+</span><span>                                             </span><span style="color:#65737e;">/*   | stack       */
+</span><span>        </span><span style="color:#bf616a;">.</span><span> += </span><span style="color:#bf616a;">__rpi_phys_binary_load_addr</span><span>;    </span><span style="color:#65737e;">/*   | growth      */
+</span><span>                                             </span><span style="color:#65737e;">/*   | direction   */
+</span><span>        </span><span style="color:#bf616a;">__boot_core_stack_end_exclusive</span><span> = </span><span style="color:#bf616a;">.</span><span>; </span><span style="color:#65737e;">/*   |             */
+</span><span>    } :</span><span style="color:#bf616a;">segment_boot_core_stack
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Code + RO Data + Global Offset Table
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.text</span><span> :
+</span><span>    {
+</span><span>        </span><span style="color:#b48ead;">KEEP</span><span>(*(</span><span style="color:#bf616a;">.text._start</span><span>))
+</span><span>        *(</span><span style="color:#bf616a;">.text._start_arguments</span><span>) </span><span style="color:#65737e;">/* Constants (or statics in Rust speak) read by _start(). */
+</span><span>        *(</span><span style="color:#bf616a;">.text._start_rust</span><span>)      </span><span style="color:#65737e;">/* The Rust entry point */
+</span><span>        *(</span><span style="color:#bf616a;">.text</span><span>*)                 </span><span style="color:#65737e;">/* Everything else */
+</span><span>    } :</span><span style="color:#bf616a;">segment_code
+</span><span>
+</span><span>    </span><span style="color:#bf616a;">.rodata</span><span> : </span><span style="color:#b48ead;">ALIGN</span><span>(</span><span style="color:#d08770;">8</span><span>) { *(</span><span style="color:#bf616a;">.rodata</span><span>*) } :</span><span style="color:#bf616a;">segment_code
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Data + BSS
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.data</span><span> : { *(</span><span style="color:#bf616a;">.data</span><span>*) } :</span><span style="color:#bf616a;">segment_data
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/* Section is zeroed in pairs of u64. Align start and end to 16 bytes */
+</span><span>    </span><span style="color:#bf616a;">.bss</span><span> (</span><span style="color:#bf616a;">NOLOAD</span><span>) : </span><span style="color:#b48ead;">ALIGN</span><span>(</span><span style="color:#d08770;">16</span><span>)
+</span><span>    {
+</span><span>        </span><span style="color:#bf616a;">__bss_start</span><span> = </span><span style="color:#bf616a;">.</span><span>;
+</span><span>        *(</span><span style="color:#bf616a;">.bss</span><span>*);
+</span><span>        </span><span style="color:#bf616a;">.</span><span> = </span><span style="color:#b48ead;">ALIGN</span><span>(</span><span style="color:#d08770;">16</span><span>);
+</span><span>        </span><span style="color:#bf616a;">__bss_end_exclusive</span><span> = </span><span style="color:#bf616a;">.</span><span>;
+</span><span>    } :</span><span style="color:#bf616a;">segment_data
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Misc
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.got</span><span> : { *(</span><span style="color:#bf616a;">.got</span><span>*) }
+</span><span>    </span><span style="color:#bf616a;">ASSERT</span><span>(</span><span style="color:#b48ead;">SIZEOF</span><span>(</span><span style="color:#bf616a;">.got</span><span>) == </span><span style="color:#d08770;">0</span><span>, </span><span style="color:#bf616a;">&quot;Relocation support not expected&quot;</span><span>)
+</span><span>
+</span><span>    /</span><span style="color:#bf616a;">DISCARD</span><span>/ : { *(</span><span style="color:#bf616a;">.comment</span><span>*) }
+</span><span>}
+</span></code></pre>
+<p>The above linker script is a lot to digest but let's take it step by step and see what makes it tick.</p>
+<p>First, we are declaring some link time variables that will be used by the rest of the script:</p>
+<pre data-lang="ld" style="background-color:#2b303b;color:#c0c5ce;" class="language-ld "><code class="language-ld" data-lang="ld"><span style="color:#bf616a;">__rpi_phys_dram_start_addr</span><span> = </span><span style="color:#d08770;">0</span><span>;
+</span><span>
+</span><span style="color:#65737e;">/* The physical address at which the the kernel binary will be loaded by the Raspberry&#39;s firmware */
+</span><span style="color:#bf616a;">__rpi_phys_binary_load_addr</span><span> = </span><span style="color:#d08770;">0x80000</span><span>;
+</span></code></pre>
+<p>In Raspberry Pi Aarch64, the kernel image will be loaded into the address <code>0x80000</code>. This is standard for Raspberry Pi running in 64 bit mode and will be different for different motherboards so we store the value here for use later in the script.</p>
+<p>Next line is:</p>
+<pre data-lang="ld" style="background-color:#2b303b;color:#c0c5ce;" class="language-ld "><code class="language-ld" data-lang="ld"><span style="color:#b48ead;">ENTRY</span><span>(</span><span style="color:#bf616a;">__rpi_phys_binary_load_addr</span><span>)
+</span></code></pre>
+<p>It sets the ELF header's entry-point field to <code>0x80000</code>. Some loaders use that field to decide where to jump; the Pi firmware ignores it and just jumps to <code>0x80000</code> regardless. Still good practice to set it right.</p>
+<p>Then we have the program-header segments:</p>
+<pre data-lang="ld" style="background-color:#2b303b;color:#c0c5ce;" class="language-ld "><code class="language-ld" data-lang="ld"><span style="color:#bf616a;">PHDRS
+</span><span>{
+</span><span>    </span><span style="color:#bf616a;">segment_boot_core_stack PT_LOAD FLAGS</span><span>(</span><span style="color:#d08770;">6</span><span>);
+</span><span>    </span><span style="color:#bf616a;">segment_code            PT_LOAD FLAGS</span><span>(</span><span style="color:#d08770;">5</span><span>);
+</span><span>    </span><span style="color:#bf616a;">segment_data            PT_LOAD FLAGS</span><span>(</span><span style="color:#d08770;">6</span><span>);
+</span><span>}
+</span></code></pre>
+<p>ELF binaries describe memory in two layers: small sections for the linker (.text, .data, …) and bigger segments that an actual loader maps. PHDRS declares those segments and their permissions.</p>
+<p>PT<em>LOAD = "an ELF loader should make this segment exist in memory."
+FLAGS(...) bits: 4 = R, 5 = R+X, 6 = R+W.
+So you end up with three logical regions: the stack (RW), the code+rodata (RX), and the mutable data + BSS (RW). Each section below is assigned to one of these via the trailing :segment</em>… syntax.</p>
+<p>The next part is the meat of the script; sections. It walks down memory address-by-address and places things. Describes start and endpoints for the different sections in our binary:</p>
+<pre data-lang="ld" style="background-color:#2b303b;color:#c0c5ce;" class="language-ld "><code class="language-ld" data-lang="ld"><span style="color:#b48ead;">SECTIONS
+</span><span>{
+</span><span>    </span><span style="color:#bf616a;">.</span><span> =  </span><span style="color:#bf616a;">__rpi_phys_dram_start_addr</span><span>;
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Boot Core Stack
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.boot_core_stack</span><span> (</span><span style="color:#bf616a;">NOLOAD</span><span>) :
+</span><span>    {
+</span><span>                                             </span><span style="color:#65737e;">/*   ^             */
+</span><span>                                             </span><span style="color:#65737e;">/*   | stack       */
+</span><span>        </span><span style="color:#bf616a;">.</span><span> += </span><span style="color:#bf616a;">__rpi_phys_binary_load_addr</span><span>;    </span><span style="color:#65737e;">/*   | growth      */
+</span><span>                                             </span><span style="color:#65737e;">/*   | direction   */
+</span><span>        </span><span style="color:#bf616a;">__boot_core_stack_end_exclusive</span><span> = </span><span style="color:#bf616a;">.</span><span>; </span><span style="color:#65737e;">/*   |             */
+</span><span>    } :</span><span style="color:#bf616a;">segment_boot_core_stack
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Code + RO Data + Global Offset Table
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.text</span><span> :
+</span><span>    {
+</span><span>        </span><span style="color:#b48ead;">KEEP</span><span>(*(</span><span style="color:#bf616a;">.text._start</span><span>))
+</span><span>        *(</span><span style="color:#bf616a;">.text._start_arguments</span><span>) </span><span style="color:#65737e;">/* Constants (or statics in Rust speak) read by _start(). */
+</span><span>        *(</span><span style="color:#bf616a;">.text._start_rust</span><span>)      </span><span style="color:#65737e;">/* The Rust entry point */
+</span><span>        *(</span><span style="color:#bf616a;">.text</span><span>*)                 </span><span style="color:#65737e;">/* Everything else */
+</span><span>    } :</span><span style="color:#bf616a;">segment_code
+</span><span>
+</span><span>    </span><span style="color:#bf616a;">.rodata</span><span> : </span><span style="color:#b48ead;">ALIGN</span><span>(</span><span style="color:#d08770;">8</span><span>) { *(</span><span style="color:#bf616a;">.rodata</span><span>*) } :</span><span style="color:#bf616a;">segment_code
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Data + BSS
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.data</span><span> : { *(</span><span style="color:#bf616a;">.data</span><span>*) } :</span><span style="color:#bf616a;">segment_data
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/* Section is zeroed in pairs of u64. Align start and end to 16 bytes */
+</span><span>    </span><span style="color:#bf616a;">.bss</span><span> (</span><span style="color:#bf616a;">NOLOAD</span><span>) : </span><span style="color:#b48ead;">ALIGN</span><span>(</span><span style="color:#d08770;">16</span><span>)
+</span><span>    {
+</span><span>        </span><span style="color:#bf616a;">__bss_start</span><span> = </span><span style="color:#bf616a;">.</span><span>;
+</span><span>        *(</span><span style="color:#bf616a;">.bss</span><span>*);
+</span><span>        </span><span style="color:#bf616a;">.</span><span> = </span><span style="color:#b48ead;">ALIGN</span><span>(</span><span style="color:#d08770;">16</span><span>);
+</span><span>        </span><span style="color:#bf616a;">__bss_end_exclusive</span><span> = </span><span style="color:#bf616a;">.</span><span>;
+</span><span>    } :</span><span style="color:#bf616a;">segment_data
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/***********************************************************************************************
+</span><span style="color:#65737e;">    * Misc
+</span><span style="color:#65737e;">    ***********************************************************************************************/
+</span><span>    </span><span style="color:#bf616a;">.got</span><span> : { *(</span><span style="color:#bf616a;">.got</span><span>*) }
+</span><span>    </span><span style="color:#bf616a;">ASSERT</span><span>(</span><span style="color:#b48ead;">SIZEOF</span><span>(</span><span style="color:#bf616a;">.got</span><span>) == </span><span style="color:#d08770;">0</span><span>, </span><span style="color:#bf616a;">&quot;Relocation support not expected&quot;</span><span>)
+</span><span>
+</span><span>    /</span><span style="color:#bf616a;">DISCARD</span><span>/ : { *(</span><span style="color:#bf616a;">.comment</span><span>*) }
+</span><span>}
+</span></code></pre>
+<p>The summary of what is going on is it defines the bounds of the Execution Stack, the actual code segment, and the data and BSS segment. I don't want to go too deep into the details of the linker script because it is vanity to master it all but feel free to discuss the details with any LLM in order to fully understand what is going on here.</p>
+<p>We are done with our boot image and at this stage we can boot our kernel on either a physical device or the QEMU emulator.
+Before we build, add the following to your Cargo.toml so that our Make script can run happily:</p>
+<pre data-lang="toml" style="background-color:#2b303b;color:#c0c5ce;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[features]
+</span><span style="color:#bf616a;">default </span><span>= [&quot;</span><span style="color:#a3be8c;">device</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">rpi5</span><span>&quot;]
+</span><span style="color:#bf616a;">emulator </span><span>= [&quot;</span><span style="color:#a3be8c;">ltr-rgb</span><span>&quot;]
+</span><span style="color:#bf616a;">device </span><span>= []
+</span><span style="color:#bf616a;">rpi5 </span><span>= []
+</span><span style="color:#bf616a;">rpi4 </span><span>= []
+</span><span style="color:#bf616a;">ltr-rgb </span><span>= []
+</span></code></pre>
+<p>We aren't using some of the features listed here yet but in due time we will cover them.</p>
+<p>Let's build and run the kernel on QEMU using our emulator:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cargo</span><span> make emulate
+</span></code></pre>
+<p>You should see a black QEMU screen pop up with no errors just like this one:
+<center><img class="p-1 w-full" src="&#x2F;images&#x2F;os-part2-result.png" alt="operating system on qemu part2 result" /></center>
+</p>
+<p>In order to run on a physical Raspberry Pi 5 device there is also a convenient cargo make task:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cargo</span><span> make sync
+</span></code></pre>
+<p>It attempts to copy the binary into a memory stick containing an existing Raspbian installation. Alter the task in <code>Makefile.toml</code> so it gets copied into the right path.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>In this part, we implemented a boot image and successfully booted our kernel on a raspberry pi environment but we still have a blank screen. In <a href="https://iambenkay.com/building-an-operating-system-in-rust-part-3/">Part 3 we will be writing to the display</a>; in QEMU that's the screen but on Raspberry Pi 5 that is the HDMI output.</p>
+</div>
+
+
+<!-- Divider -->
+<hr class="border-zinc-200 dark:border-zinc-800 my-10" />
+
+<!-- Comments -->
+<section>
+    <p
+        class="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-6"
+    >
+        Discussion
+    </p>
+    <script
+        src="https://utteranc.es/client.js"
+        repo="iambenkay/iambenkay.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async
+    ></script>
+</section>
+
+<script>
+    // Switch utterances theme with dark mode
+    function syncUtterancesTheme() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const frame = document.querySelector(".utterances-frame");
+        if (frame) {
+            frame.contentWindow.postMessage(
+                {
+                    type: "set-theme",
+                    theme: isDark ? "github-dark" : "github-light",
+                },
+                "https://utteranc.es",
+            );
+        }
+    }
+
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        setTimeout(syncUtterancesTheme, 50);
+    });
+
+    window.addEventListener("message", (e) => {
+        if (
+            e.origin === "https://utteranc.es" &&
+            e.data &&
+            e.data.type === "resize"
+        ) {
+            syncUtterancesTheme();
+        }
+    });
+
+    function loadCopyButtons() {
+        document.querySelectorAll("pre").forEach((block) => {
+            const btn = document.createElement("div");
+            btn.textContent = "Copy";
+            btn.classList.add(
+                "absolute",
+                "top-2",
+                "right-2",
+                "bg-white/10",
+                "cursor-pointer",
+                "rounded",
+                "px-2",
+                "py-0.5",
+                "text-xs",
+                "text-zinc-300",
+                "hover:bg-white/20",
+                "transition-colors",
+            );
+            block.style.position = "relative";
+            block.appendChild(btn);
+            btn.addEventListener("click", () => {
+                navigator.clipboard.writeText(
+                    block.querySelector("code").textContent.trimEnd(),
+                );
+                btn.textContent = "Copied!";
+                setTimeout(() => {
+                    btn.textContent = "Copy";
+                }, 2000);
+            });
+        });
+    }
+
+    loadCopyButtons();
+</script>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-zinc-200 dark:border-zinc-800 mt-16">
+            <div
+                class="max-w-3xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-end gap-2 text-sm text-zinc-500 dark:text-zinc-500"
+            >
+                <span>© 2026 Benjamin Chibuzor-Orie</span>
+            </div>
+        </footer>
+
+        <script>
+            // Dark mode toggle
+            const html = document.documentElement;
+            const toggle = document.getElementById("theme-toggle");
+            const sun = document.getElementById("icon-sun");
+            const moon = document.getElementById("icon-moon");
+
+            function applyTheme(dark) {
+                html.classList.toggle("dark", dark);
+                sun.classList.toggle("hidden", !dark);
+                moon.classList.toggle("hidden", dark);
+            }
+
+            const stored = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia(
+                "(prefers-color-scheme: dark)",
+            ).matches;
+            applyTheme(stored === "dark" || (!stored && prefersDark));
+
+            toggle.addEventListener("click", () => {
+                const isDark = html.classList.contains("dark");
+                applyTheme(!isDark);
+                localStorage.setItem("theme", isDark ? "light" : "dark");
+            });
+        </script>
+
+        <script type="module">
+            import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/+esm";
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyDbmff0_NioNCGzbRl_E_ldtXbxQIcpcJs",
+                authDomain: "benkay-blog.firebaseapp.com",
+                projectId: "benkay-blog",
+                storageBucket: "benkay-blog.firebasestorage.app",
+                messagingSenderId: "880946931838",
+                appId: "1:880946931838:web:9a0899015b0ca6eadd902f",
+                measurementId: "G-LPDNWEQSQK",
+            };
+
+            if (window.location.hostname !== "localhost") {
+                const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app);
+            }
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    </body>
+</html>

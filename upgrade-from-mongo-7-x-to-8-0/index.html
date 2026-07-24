@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en" class="">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        
+<title>My hackaround for upgrading MongoDB from 7.x to 8.0 — Benjamin Chibuzor-Orie</title>
+<link rel="canonical" href="https://iambenkay.com/upgrade-from-mongo-7-x-to-8-0/" />
+<meta property="og:title" content="My hackaround for upgrading MongoDB from 7.x to 8.0" />
+<meta property="og:description" content="Recently I had to upgrade MongoDB from 7.x to 8.0 to use some of the new features including bulk writes (the Rust SDK does not support this feature for 7.x versions yet). I tried to follow the official migration documentation for migrating an existing replica" />
+<meta property="og:image" content="&#x2F;images&#x2F;header-mongo.jpg" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https:&#x2F;&#x2F;iambenkay.com&#x2F;upgrade-from-mongo-7-x-to-8-0&#x2F;" />
+<meta property="article:published_time" content="2025-12-07" />
+<meta property="article:section" content="Programming" />
+
+<meta property="article:tag" content="MongoDB" />
+
+<meta property="article:tag" content="Upgrade" />
+ 
+        <link href="/markdown.css" rel="stylesheet" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+            };
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,600;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "Inter", sans-serif;
+            }
+            .font-serif {
+                font-family: "Lora", serif;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-200"
+    >
+        <!-- Nav -->
+        <header
+            class="border-b border-zinc-200 dark:border-zinc-800 bg-stone-50/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10"
+        >
+            <div
+                class="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between"
+            >
+                <a href="/" class="flex items-center gap-2.5 group min-w-0">
+                    <div
+                        class="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+                    >
+                        B
+                    </div>
+                    <span
+                        class="font-semibold text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors truncate"
+                        >Benjamin Chibuzor-Orie</span
+                    >
+                </a>
+                <button
+                    id="theme-toggle"
+                    aria-label="Toggle dark mode"
+                    class="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg
+                        id="icon-sun"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="hidden w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z"
+                        />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg
+                        id="icon-moon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
+                        />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto px-6 py-10">
+            
+
+<!-- Back link -->
+<a
+    href="javascript:history.back()"
+    class="inline-flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mb-8"
+>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+    >
+        <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M7 16l-4-4m0 0l4-4m-4 4h18"
+        />
+    </svg>
+    Back
+</a>
+
+<!-- Tags -->
+
+<div class="flex flex-wrap gap-2 mb-4">
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        MongoDB
+    </span>
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Upgrade
+    </span>
+    
+</div>
+
+
+<!-- Title -->
+<h1
+    class="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight"
+>
+    My hackaround for upgrading MongoDB from 7.x to 8.0
+</h1>
+
+<!-- Byline -->
+<div class="flex items-center gap-3 mt-5">
+    <div
+        class="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+    >
+        B
+    </div>
+    <div>
+        <p class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            Benjamin Chibuzor-Orie
+        </p>
+        <div
+            class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-400 dark:text-zinc-500"
+        >
+            
+            <time>December 07, 2025</time>
+             
+            <span>·</span>
+            <span>779 words</span>
+            <span>·</span>
+            <span>4 min read</span>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Hero image -->
+
+<img
+    loading="lazy"
+    src="https:&#x2F;&#x2F;iambenkay.com&#x2F;processed_images&#x2F;header-mongo.479e4df862e94d5d.jpg"
+    alt="MongoDB"
+    class="mt-8 w-full rounded-2xl object-cover object-center border border-zinc-100 dark:border-zinc-800 shadow-sm"
+/>
+
+<!-- Article body -->
+<div id="blog-body" class="markdown mt-10 mb-12"><p>Recently I had to upgrade <strong>MongoDB</strong> from <code>7.x</code> to <code>8.0</code> to use some of the new features including bulk writes (the Rust SDK does not support this feature for <code>7.x</code> versions yet). I tried to follow the official migration documentation for migrating an existing replica set to 8.0 but I encountered a major issue that I want to share with you. Ultimately we will discuss my workaround for this.</p>
+<h2 id="background">Background</h2>
+<p>MongoDB has since made replica sets the recommended way to configure your <strong>MongoDB</strong> deployments even if it is just one instance. Configuring your database in this way ensures that your data is always available and protected from hardware failures thanks to the replication. This seemingly innocuous configuration which pretends like it is here to save you from the risk of data loss may also be the reason you are unable to upgrade your mongo deployment. I made sure to follow the documentation for migrating replica sets step by step until the end, the only unique thing about my scenario is that it is still a single node replica set.</p>
+<p>Something I would advice is to make sure that you have a backup of your data before you start the migration process. This is especially important if you are running a single node replica set as it is the only node that contains all your data. If something goes wrong during the migration process, you will lose all your data.</p>
+<p>The actual issue I encountered was after stepping down the node from primary and swapping the binaries to 8.0, the node would not start up. The error message in the container logs for mongo looked like WiredTiger related issues and it denoted an incompatibility or corruption of some sort.</p>
+<h2 id="solution">Solution</h2>
+<p>I found two ways to fix this problem, both of which involving transferring the data from the old node to a new node, just that one is done manually by you while the other is done automatically by the replica set configuration.</p>
+<h3 id="manual-transfer">Manual Transfer</h3>
+<p>In this case you will need to transfer the data from the <code>7.x</code> instance of the DB to a new <code>8.0</code> instance.</p>
+<ol>
+<li>Create a new <code>8.0</code> instance of MongoDB.</li>
+<li>Download <strong>mongo</strong> cli tools (specifically <code>mongodump</code> and <code>mongorestore</code>) for your operating system.</li>
+<li>Use <code>mongodump</code> to dump the data from the <code>7.x</code> instance.
+Here is the command for dumping the data from the <code>7.x</code> instance:<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">mongodump --uri </span><span>&quot;$</span><span style="color:#bf616a;">MONGODB_URI</span><span>&quot;</span><span style="color:#bf616a;"> --gzip
+</span></code></pre>
+This will create a dump of your database in a folder called <code>dump</code> in the same directory. We used <code>--gzip</code> to compress the bson files</li>
+<li>Use <code>mongorestore</code> to restore the data to the new <code>8.0</code> instance.
+Here is the command for restoring the data to the new <code>8.0</code> instance:<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">mongorestore --uri</span><span>=&quot;$</span><span style="color:#bf616a;">MONGODB_URI</span><span>&quot;</span><span style="color:#bf616a;"> --gzip --dir</span><span>=dump</span><span style="color:#bf616a;"> --drop
+</span></code></pre>
+This will restore the data from the dump folder to the new <code>8.0</code> instance. The <code>--drop</code> flag will drop the database before restoring the data. This is useful if you want to start with a clean database.</li>
+</ol>
+<h3 id="replica-set-transfer">Replica Set Transfer</h3>
+<p>In this case you will need to transfer the data from the <code>7.x</code> instance of the DB to a new <code>8.0</code> instance.</p>
+<ol>
+<li>Create a new <code>8.0</code> instance of MongoDB.</li>
+<li>Add the new instance to the replica set.</li>
+<li>Use <code>rs.stepDown()</code> to step down the <code>7.x</code> instance.</li>
+<li>Use <code>rs.reconfig()</code> to reconfigure the replica set to include the new <code>8.0</code> instance.
+Here is the command for reconfiguring the replica set:<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#bf616a;">rs</span><span>.</span><span style="color:#8fa1b3;">reconfig</span><span>({
+</span><span>    &quot;</span><span style="color:#a3be8c;">_id</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">rs0</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">version</span><span>&quot;: </span><span style="color:#d08770;">2</span><span>,
+</span><span>    &quot;</span><span style="color:#a3be8c;">members</span><span>&quot;: [
+</span><span>        {
+</span><span>            &quot;</span><span style="color:#a3be8c;">_id</span><span>&quot;: </span><span style="color:#d08770;">0</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">host</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">{MONGO_7_X_PUBLIC_IP}:27017</span><span>&quot;,
+</span><span>        },
+</span><span>        {
+</span><span>            &quot;</span><span style="color:#a3be8c;">_id</span><span>&quot;: </span><span style="color:#d08770;">1</span><span>,
+</span><span>            &quot;</span><span style="color:#a3be8c;">host</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">{MONGO_8_0_PUBLIC_IP}:27017</span><span>&quot;,
+</span><span>        }
+</span><span>    ]
+</span><span>})
+</span></code></pre>
+This will reconfigure the replica set to include the new <code>8.0</code> instance.</li>
+<li>Use <code>rs.status()</code> to check the status of the replica set.</li>
+</ol>
+<h2 id="conclusion">Conclusion</h2>
+<p>That was what worked for me. Let me know in the comments if you run into any issues with this process and I'll try to help you out.</p>
+</div>
+
+
+<!-- Divider -->
+<hr class="border-zinc-200 dark:border-zinc-800 my-10" />
+
+<!-- Comments -->
+<section>
+    <p
+        class="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-6"
+    >
+        Discussion
+    </p>
+    <script
+        src="https://utteranc.es/client.js"
+        repo="iambenkay/iambenkay.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async
+    ></script>
+</section>
+
+<script>
+    // Switch utterances theme with dark mode
+    function syncUtterancesTheme() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const frame = document.querySelector(".utterances-frame");
+        if (frame) {
+            frame.contentWindow.postMessage(
+                {
+                    type: "set-theme",
+                    theme: isDark ? "github-dark" : "github-light",
+                },
+                "https://utteranc.es",
+            );
+        }
+    }
+
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        setTimeout(syncUtterancesTheme, 50);
+    });
+
+    window.addEventListener("message", (e) => {
+        if (
+            e.origin === "https://utteranc.es" &&
+            e.data &&
+            e.data.type === "resize"
+        ) {
+            syncUtterancesTheme();
+        }
+    });
+
+    function loadCopyButtons() {
+        document.querySelectorAll("pre").forEach((block) => {
+            const btn = document.createElement("div");
+            btn.textContent = "Copy";
+            btn.classList.add(
+                "absolute",
+                "top-2",
+                "right-2",
+                "bg-white/10",
+                "cursor-pointer",
+                "rounded",
+                "px-2",
+                "py-0.5",
+                "text-xs",
+                "text-zinc-300",
+                "hover:bg-white/20",
+                "transition-colors",
+            );
+            block.style.position = "relative";
+            block.appendChild(btn);
+            btn.addEventListener("click", () => {
+                navigator.clipboard.writeText(
+                    block.querySelector("code").textContent.trimEnd(),
+                );
+                btn.textContent = "Copied!";
+                setTimeout(() => {
+                    btn.textContent = "Copy";
+                }, 2000);
+            });
+        });
+    }
+
+    loadCopyButtons();
+</script>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-zinc-200 dark:border-zinc-800 mt-16">
+            <div
+                class="max-w-3xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-end gap-2 text-sm text-zinc-500 dark:text-zinc-500"
+            >
+                <span>© 2026 Benjamin Chibuzor-Orie</span>
+            </div>
+        </footer>
+
+        <script>
+            // Dark mode toggle
+            const html = document.documentElement;
+            const toggle = document.getElementById("theme-toggle");
+            const sun = document.getElementById("icon-sun");
+            const moon = document.getElementById("icon-moon");
+
+            function applyTheme(dark) {
+                html.classList.toggle("dark", dark);
+                sun.classList.toggle("hidden", !dark);
+                moon.classList.toggle("hidden", dark);
+            }
+
+            const stored = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia(
+                "(prefers-color-scheme: dark)",
+            ).matches;
+            applyTheme(stored === "dark" || (!stored && prefersDark));
+
+            toggle.addEventListener("click", () => {
+                const isDark = html.classList.contains("dark");
+                applyTheme(!isDark);
+                localStorage.setItem("theme", isDark ? "light" : "dark");
+            });
+        </script>
+
+        <script type="module">
+            import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/+esm";
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyDbmff0_NioNCGzbRl_E_ldtXbxQIcpcJs",
+                authDomain: "benkay-blog.firebaseapp.com",
+                projectId: "benkay-blog",
+                storageBucket: "benkay-blog.firebasestorage.app",
+                messagingSenderId: "880946931838",
+                appId: "1:880946931838:web:9a0899015b0ca6eadd902f",
+                measurementId: "G-LPDNWEQSQK",
+            };
+
+            if (window.location.hostname !== "localhost") {
+                const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app);
+            }
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    </body>
+</html>

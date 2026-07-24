@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="en" class="">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        
+<title>Building an Operating System In Rust Part 3 — Benjamin Chibuzor-Orie</title>
+<link rel="canonical" href="https://iambenkay.com/building-an-operating-system-in-rust-part-3/" />
+<meta property="og:title" content="Building an Operating System In Rust Part 3" />
+<meta property="og:description" content="In high level land, writing to the screen is a trivial task: you want text then just call println, you want shapes then just use a drawing library like bevy or wgpu. In kernel land, these luxuries have been stripped away. You have to earn every pixel yourself." />
+<meta property="og:image" content="&#x2F;images&#x2F;header-rust.jpg" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https:&#x2F;&#x2F;iambenkay.com&#x2F;building-an-operating-system-in-rust-part-3&#x2F;" />
+<meta property="article:published_time" content="2026-06-20" />
+<meta property="article:section" content="Programming" />
+
+<meta property="article:tag" content="Rust" />
+
+<meta property="article:tag" content="Operating System" />
+
+<meta property="article:tag" content="Low Level" />
+ 
+        <link href="/markdown.css" rel="stylesheet" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+            };
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,600;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "Inter", sans-serif;
+            }
+            .font-serif {
+                font-family: "Lora", serif;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-200"
+    >
+        <!-- Nav -->
+        <header
+            class="border-b border-zinc-200 dark:border-zinc-800 bg-stone-50/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10"
+        >
+            <div
+                class="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between"
+            >
+                <a href="/" class="flex items-center gap-2.5 group min-w-0">
+                    <div
+                        class="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+                    >
+                        B
+                    </div>
+                    <span
+                        class="font-semibold text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors truncate"
+                        >Benjamin Chibuzor-Orie</span
+                    >
+                </a>
+                <button
+                    id="theme-toggle"
+                    aria-label="Toggle dark mode"
+                    class="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg
+                        id="icon-sun"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="hidden w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z"
+                        />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg
+                        id="icon-moon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
+                        />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto px-6 py-10">
+            
+
+<!-- Back link -->
+<a
+    href="javascript:history.back()"
+    class="inline-flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mb-8"
+>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+    >
+        <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M7 16l-4-4m0 0l4-4m-4 4h18"
+        />
+    </svg>
+    Back
+</a>
+
+<!-- Tags -->
+
+<div class="flex flex-wrap gap-2 mb-4">
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Rust
+    </span>
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Operating System
+    </span>
+    
+    <span
+        class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900"
+    >
+        Low Level
+    </span>
+    
+</div>
+
+
+<!-- Title -->
+<h1
+    class="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight"
+>
+    Building an Operating System In Rust Part 3
+</h1>
+
+<!-- Byline -->
+<div class="flex items-center gap-3 mt-5">
+    <div
+        class="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+    >
+        B
+    </div>
+    <div>
+        <p class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            Benjamin Chibuzor-Orie
+        </p>
+        <div
+            class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-400 dark:text-zinc-500"
+        >
+            
+            <span>Under Construction</span>
+             
+        </div>
+    </div>
+</div>
+
+<!-- Hero image -->
+
+<img
+    loading="lazy"
+    src="https:&#x2F;&#x2F;iambenkay.com&#x2F;processed_images&#x2F;header-rust.40d8abec8dd4909a.jpg"
+    alt="Rust"
+    class="mt-8 w-full rounded-2xl object-cover object-center border border-zinc-100 dark:border-zinc-800 shadow-sm"
+/>
+
+<!-- Article body -->
+<div id="blog-body" class="markdown mt-10 mb-12"><p>Before you start, note that this chapter is still under construction. The complete source code already lives on <a href="https://github.com/iambenkay/kluster/tree/340c69b5818b9998f09a9b9b382844bab158979b">Github</a> but preparing a deep dive takes time. If you are up to it, you can clone the repository and actually get ahead while I work on the blog.</p>
+<p>In <a href="https://iambenkay.com/building-an-operating-system-in-rust-part-2/">Part 2 we built an entrypoint for our operating system</a> and ran it successfully on QEMU and a physical Raspberry Pi 5 device. We also learnt about the boot image and how to link our kernel source code into one kernel binary. Next we are going to write to the screen!</p>
+<p>If you have been binging this series, now is the time to take a short break before going into the next part because it's the most complex part yet. In high level land, writing to the screen is a trivial task: you want text then just call <code>println</code>, you want shapes then just use a drawing library like <code>bevy</code> or <code>wgpu</code>. In kernel land, these luxuries have been stripped away. You have to earn every pixel yourself. We will learn our first brutal lesson when it comes to writing operating systems: You have to be willing to dig through obscure documentation to find what you are looking for. In many cases the documentation will be non-existent and you need to find other ways to achieve your goal.</p>
+<p>As I stated in previous parts, I built this operating system to run on Raspberry Pi 5, a poorly documented interface compared to the previous generations (Pi 3 &amp; 4) and my only hope for implementing some features, for example, drawing to the screen was by digging into the disk image of the raspberry pi OS image. I will explain all the pain I went through and how I found the resources hidden where no one would think to look but be prepared to go through worse if you venture out into building more complicated features outside the scope of this tutorial. Operating System Development has never been an easy interest to pursue and the industry players don't seem to be keen about reducing the barrier to entry so you need a heart of stone to push through. Mind you I went through a lot of turmoil to support just one motherboard (raspberry pi). Imagine trying to support all the computers that exist out there. Just sit on that...</p>
+<p>Okay, saddle up! let us dive into the topic for today.</p>
+<h1 id="writing-to-the-screen">Writing to the screen</h1>
+<p>Different motherboards have different peripheral systems and in order to successfully write to the screen, we have to handle it the way each motherboard expects. For Raspberry Pi, there are onboard HDMI ports for video output. The goal of this exercise is to learn how to draw to its video output so that when it is connected to a monitor we can see those shapes! In order to understand how the shapes are rendered we have to talk about the CPU architecture of this board.</p>
+<h2 id="raspberry-pi-cpu-architecture">Raspberry Pi CPU Architecture</h2>
+<p>The Pi is actually a two processor system consisting of the VideoCore GPU and the ARM Cores. The VideoCore GPU is the primary processor; it starts up first, runs proprietary firmware, sets up system clocks, initializes RAM, sets up the HDMI display and starts up the ARM cores. It is the most important processor on the board. It owns and controls access to the frame buffer, power rails, board info, temperature, audio, etc. and other system peripherals. Our kernel however is running on the ARM Cores so the question becomes how do we communicate to VideoCore when we need to use any of those resources? We do this using the <strong>mailbox</strong>.</p>
+<h2 id="mailbox">Mailbox</h2>
+<p>The mailbox is how we send commands to and from VideoCore in order to control any resource it manages. It's a simple and straightforward interface actually; we send a mailbox request, we wait for a response from the VideoCore and then we use the response. Full disclosure, using the mailbox for writing to the screen is a legacy approach in raspberry pi 5; there is a newer API available specifically for this task but I read that it is more complicated than the mailbox (I have not tried it yet but will do so eventually) so I decided to use mailbox for the sake of this tutorial. Let us configure our mailbox request-response flow!</p>
+<p>Create a new file <code>src/motherboards/raspberrypi/mailbox.rs</code> and add the following content:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>core::ptr::{addr_of, addr_of_mut, read_volatile, write_volatile};
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_RESPONSE</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x8000_0000</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_FULL</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x8000_0000</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_EMPTY</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x4000_0000</span><span>;
+</span><span>
+</span><span style="color:#b48ead;">struct </span><span>MboxAddress;
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>MboxAddress {
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">root</span><span>() -&gt; </span><span style="color:#b48ead;">usize </span><span>{
+</span><span>        #[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">rpi5</span><span>&quot;)]
+</span><span>        </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">0x10_7C01_3880</span><span>;
+</span><span>
+</span><span>        #[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">rpi4</span><span>&quot;)]
+</span><span>        </span><span style="color:#d08770;">0xFE00_B880
+</span><span>    }
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">read</span><span>() -&gt; </span><span style="color:#b48ead;">*const u32 </span><span>{
+</span><span>        (</span><span style="color:#b48ead;">Self</span><span>::root() + </span><span style="color:#d08770;">0x00</span><span>) as </span><span style="color:#b48ead;">*const u32
+</span><span>    }
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">status</span><span>() -&gt; </span><span style="color:#b48ead;">*const u32 </span><span>{
+</span><span>        (</span><span style="color:#b48ead;">Self</span><span>::root() + </span><span style="color:#d08770;">0x18</span><span>) as </span><span style="color:#b48ead;">*const u32
+</span><span>    }
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">write</span><span>() -&gt; </span><span style="color:#b48ead;">*mut u32 </span><span>{
+</span><span>        (</span><span style="color:#b48ead;">Self</span><span>::root() + </span><span style="color:#d08770;">0x20</span><span>) as </span><span style="color:#b48ead;">*mut u32
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">repr</span><span>(C, </span><span style="color:#bf616a;">align</span><span>(16))]
+</span><span style="color:#b48ead;">struct </span><span>MailboxBuffer([</span><span style="color:#b48ead;">u32</span><span>; 36]);
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>MailboxBuffer {
+</span><span>    </span><span style="color:#b48ead;">const fn </span><span style="color:#8fa1b3;">new</span><span>() -&gt; MailboxBuffer {
+</span><span>        MailboxBuffer([</span><span style="color:#d08770;">0</span><span>; </span><span style="color:#d08770;">36</span><span>])
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">static mut </span><span style="color:#d08770;">MBOX_BUFFER</span><span>: MailboxBuffer = MailboxBuffer::new();
+</span><span>
+</span><span style="color:#65737e;">/// set value at mailbox index
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">mbox_set</span><span>(</span><span style="color:#bf616a;">i</span><span>: </span><span style="color:#b48ead;">usize</span><span>, </span><span style="color:#bf616a;">v</span><span>: </span><span style="color:#b48ead;">u32</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>        </span><span style="color:#b48ead;">let</span><span> base = addr_of_mut!(</span><span style="color:#d08770;">MBOX_BUFFER</span><span>.</span><span style="color:#d08770;">0</span><span>) as </span><span style="color:#b48ead;">*mut u32</span><span>;
+</span><span>        </span><span style="color:#96b5b4;">write_volatile</span><span>(base.</span><span style="color:#96b5b4;">add</span><span>(i), v);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// get value at mailbox index
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">mbox_get</span><span>(</span><span style="color:#bf616a;">i</span><span>: </span><span style="color:#b48ead;">usize</span><span>) -&gt; </span><span style="color:#b48ead;">u32 </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>        </span><span style="color:#b48ead;">let</span><span> base = addr_of!(</span><span style="color:#d08770;">MBOX_BUFFER</span><span>.</span><span style="color:#d08770;">0</span><span>) as </span><span style="color:#b48ead;">*const u32</span><span>;
+</span><span>        </span><span style="color:#96b5b4;">read_volatile</span><span>(base.</span><span style="color:#96b5b4;">add</span><span>(i))
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// Send mailbox request on channel `channel` and wait for response
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">mbox_call</span><span>(</span><span style="color:#bf616a;">channel</span><span>: </span><span style="color:#b48ead;">u32</span><span>) -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> addr = addr_of!(</span><span style="color:#d08770;">MBOX_BUFFER</span><span>) as </span><span style="color:#b48ead;">usize </span><span>as </span><span style="color:#b48ead;">u32</span><span>;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> channel = (addr &amp; !</span><span style="color:#d08770;">0xF</span><span>) | (channel &amp; </span><span style="color:#d08770;">0xF</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">while </span><span style="color:#96b5b4;">is_mbox_full</span><span>() {
+</span><span>        core::hint::spin_loop();
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">write_mbox_request</span><span>(channel);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">loop </span><span>{
+</span><span>        </span><span style="color:#b48ead;">while </span><span style="color:#96b5b4;">is_mbox_empty</span><span>() {
+</span><span>            core::hint::spin_loop();
+</span><span>        }
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#96b5b4;">does_mbox_response_match</span><span>(channel) {
+</span><span>            </span><span style="color:#b48ead;">return </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">1</span><span>) == </span><span style="color:#d08770;">MBOX_RESPONSE</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">is_mbox_full</span><span>() -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ (</span><span style="color:#96b5b4;">read_volatile</span><span>(MboxAddress::status()) &amp; </span><span style="color:#d08770;">MBOX_FULL</span><span>) != </span><span style="color:#d08770;">0 </span><span>}
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">is_mbox_empty</span><span>() -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ (</span><span style="color:#96b5b4;">read_volatile</span><span>(MboxAddress::status()) &amp; </span><span style="color:#d08770;">MBOX_EMPTY</span><span>) != </span><span style="color:#d08770;">0 </span><span>}
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">write_mbox_request</span><span>(</span><span style="color:#bf616a;">request</span><span>: </span><span style="color:#b48ead;">u32</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ </span><span style="color:#96b5b4;">write_volatile</span><span>(MboxAddress::write(), request) }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">does_mbox_response_match</span><span>(</span><span style="color:#bf616a;">request</span><span>: </span><span style="color:#b48ead;">u32</span><span>) -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ </span><span style="color:#96b5b4;">read_volatile</span><span>(MboxAddress::read()) == request }
+</span><span>}
+</span></code></pre>
+<p>Then add the module to <code>src/motherboards/raspberrypi/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub mod </span><span>mailbox;
+</span></code></pre>
+<p>As usual, let's zoom in on each line in the earlier snippet and see what is going on.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>core::ptr::{addr_of, addr_of_mut, read_volatile, write_volatile};
+</span></code></pre>
+<p>Let me describe what each of these imports do for us:</p>
+<ol>
+<li><code>addr_of</code> is a macro that returns the memory location of a variable.</li>
+<li><code>addr_of_mut</code> is a macro similar to <code>addr_of</code> but it returns a mutable pointer to the memory location.</li>
+<li><code>read_volatile</code> is a function that reads data from a memory location. The naive way to do this would have been to dereference a pointer but its not reliable to do it that way as it may be entirely elided or reordered by the Rust compiler so the safe bet is this function.</li>
+<li><code>write_volatile</code> is a function that writes to a memory location in a persistent way that will not be elided or reordered by the Rust compiler.</li>
+</ol>
+<p>Next we define masks for interpreting the data returned by the mailbox at any given point in time:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_RESPONSE</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x8000_0000</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_FULL</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x8000_0000</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_EMPTY</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x4000_0000</span><span>;
+</span></code></pre>
+<p>Where:</p>
+<ol>
+<li><code>MBOX_RESPONSE</code> is used to check if the mailbox has received a response</li>
+<li><code>MBOX_FULL</code> is used to check if the mailbox is ready to process a new request</li>
+<li><code>MBOX_EMPTY</code> is used to check if the mailbox has received a response for a pending request</li>
+</ol>
+<p>Next, we define the various memory addresses required for interacting with the VideoCore processor's mailbox:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">struct </span><span>MboxAddress;
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>MboxAddress {
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">root</span><span>() -&gt; </span><span style="color:#b48ead;">usize </span><span>{
+</span><span>        #[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">rpi5</span><span>&quot;)]
+</span><span>        </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">0x10_7C01_3880</span><span>;
+</span><span>
+</span><span>        #[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">rpi4</span><span>&quot;)]
+</span><span>        </span><span style="color:#d08770;">0xFE00_B880
+</span><span>    }
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">read</span><span>() -&gt; </span><span style="color:#b48ead;">*const u32 </span><span>{
+</span><span>        (</span><span style="color:#b48ead;">Self</span><span>::root() + </span><span style="color:#d08770;">0x00</span><span>) as </span><span style="color:#b48ead;">*const u32
+</span><span>    }
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">status</span><span>() -&gt; </span><span style="color:#b48ead;">*const u32 </span><span>{
+</span><span>        (</span><span style="color:#b48ead;">Self</span><span>::root() + </span><span style="color:#d08770;">0x18</span><span>) as </span><span style="color:#b48ead;">*const u32
+</span><span>    }
+</span><span>    #[</span><span style="color:#bf616a;">inline</span><span>(always)]
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">write</span><span>() -&gt; </span><span style="color:#b48ead;">*mut u32 </span><span>{
+</span><span>        (</span><span style="color:#b48ead;">Self</span><span>::root() + </span><span style="color:#d08770;">0x20</span><span>) as </span><span style="color:#b48ead;">*mut u32
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>In <code>fn root()</code>, we use two of our previously configured feature flags from <code>Cargo.toml</code>. We configure a different address for either Pi 5 or Pi 4. If we wanted to support Pi 3 then we would define that here too. Mind you, I didn't pick these addresses. They are predefined addresses and they have to be exactly correct for any code you are writing to work. Later, I will show you how I got these addresses and how you can apply the approach when implementing other features for your raspberry pi. This is the base address for the mailbox and all the other addresses are calculated as offsets from it.</p>
+<p>When the mailbox responds to a specific request it stores information that can identify that request in the memory address returned by <code>fn read()</code> above which is just the same as the base address.</p>
+<p>The memory address returned by <code>fn status()</code> tracks the busy/idle status of the mailbox. It is used in conjunction with the masks to ascertain the exact status of the mailbox at any given time.</p>
+<p>The memory address returned by <code>fn write()</code> is used to submit a mailbox request to the VideoCore processor.</p>
+<p>We use <code>#[inline(always)]</code> to instruct the compiler to always inline the instructions generated for this function at the call site. Helps reduce function call overhead but it is not to be abused since it can actually harm performance if misused. It's good to use it here since we are just computing some values that don't deserve the overhead of a function call.</p>
+<p>Next, we define the Mailbox buffer:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">repr</span><span>(C, </span><span style="color:#bf616a;">align</span><span>(16))]
+</span><span style="color:#b48ead;">struct </span><span>MailboxBuffer([</span><span style="color:#b48ead;">u32</span><span>; 36]);
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>MailboxBuffer {
+</span><span>    </span><span style="color:#b48ead;">const fn </span><span style="color:#8fa1b3;">new</span><span>() -&gt; MailboxBuffer {
+</span><span>        MailboxBuffer([</span><span style="color:#d08770;">0</span><span>; </span><span style="color:#d08770;">36</span><span>])
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">static mut </span><span style="color:#d08770;">MBOX_BUFFER</span><span>: MailboxBuffer = MailboxBuffer::new();
+</span></code></pre>
+<p>Before we send any request to the VideoCore processor, we have to store the details of our request in this buffer, retrieve it's address and then send it so the VideoCore knows where to retrieve the request information from.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// set value at mailbox index
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">mbox_set</span><span>(</span><span style="color:#bf616a;">i</span><span>: </span><span style="color:#b48ead;">usize</span><span>, </span><span style="color:#bf616a;">v</span><span>: </span><span style="color:#b48ead;">u32</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>        </span><span style="color:#b48ead;">let</span><span> base = addr_of_mut!(</span><span style="color:#d08770;">MBOX_BUFFER</span><span>.</span><span style="color:#d08770;">0</span><span>) as </span><span style="color:#b48ead;">*mut u32</span><span>;
+</span><span>        </span><span style="color:#96b5b4;">write_volatile</span><span>(base.</span><span style="color:#96b5b4;">add</span><span>(i), v);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// get value at mailbox index
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">mbox_get</span><span>(</span><span style="color:#bf616a;">i</span><span>: </span><span style="color:#b48ead;">usize</span><span>) -&gt; </span><span style="color:#b48ead;">u32 </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>        </span><span style="color:#b48ead;">let</span><span> base = addr_of!(</span><span style="color:#d08770;">MBOX_BUFFER</span><span>.</span><span style="color:#d08770;">0</span><span>) as </span><span style="color:#b48ead;">*const u32</span><span>;
+</span><span>        </span><span style="color:#96b5b4;">read_volatile</span><span>(base.</span><span style="color:#96b5b4;">add</span><span>(i))
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The two functions above are helpers used to read/write to any index of the Mailbox buffer.</p>
+<p>Next we define <code>fn mbox_call()</code> which actually coordinates firing the request and waiting for a response for each request:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// Send mailbox request on channel `channel` and wait for response
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">mbox_call</span><span>(</span><span style="color:#bf616a;">channel</span><span>: </span><span style="color:#b48ead;">u32</span><span>) -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> addr = addr_of!(</span><span style="color:#d08770;">MBOX_BUFFER</span><span>) as </span><span style="color:#b48ead;">usize </span><span>as </span><span style="color:#b48ead;">u32</span><span>;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> channel = (addr &amp; !</span><span style="color:#d08770;">0xF</span><span>) | (channel &amp; </span><span style="color:#d08770;">0xF</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">while </span><span style="color:#96b5b4;">is_mbox_full</span><span>() {
+</span><span>        core::hint::spin_loop();
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">write_mbox_request</span><span>(channel);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">loop </span><span>{
+</span><span>        </span><span style="color:#b48ead;">while </span><span style="color:#96b5b4;">is_mbox_empty</span><span>() {
+</span><span>            core::hint::spin_loop();
+</span><span>        }
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#96b5b4;">does_mbox_response_match</span><span>(channel) {
+</span><span>            </span><span style="color:#b48ead;">return </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">1</span><span>) == </span><span style="color:#d08770;">MBOX_RESPONSE</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The flow is simple; if the mailbox is full, wait for it to be ready. then write the mailbox buffer's location to the mailbox write address, then wait for the mailbox to not be empty (return a response) then check if the response saved to the buffer matches the request that was sent. If it does then our response has been successfully saved to the mailbox buffer.</p>
+<p>Finally, the helpers referenced in the previous snippet:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">is_mbox_full</span><span>() -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ (</span><span style="color:#96b5b4;">read_volatile</span><span>(MboxAddress::status()) &amp; </span><span style="color:#d08770;">MBOX_FULL</span><span>) != </span><span style="color:#d08770;">0 </span><span>}
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">is_mbox_empty</span><span>() -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ (</span><span style="color:#96b5b4;">read_volatile</span><span>(MboxAddress::status()) &amp; </span><span style="color:#d08770;">MBOX_EMPTY</span><span>) != </span><span style="color:#d08770;">0 </span><span>}
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">write_mbox_request</span><span>(</span><span style="color:#bf616a;">request</span><span>: </span><span style="color:#b48ead;">u32</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ </span><span style="color:#96b5b4;">write_volatile</span><span>(MboxAddress::write(), request) }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">does_mbox_response_match</span><span>(</span><span style="color:#bf616a;">request</span><span>: </span><span style="color:#b48ead;">u32</span><span>) -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{ </span><span style="color:#96b5b4;">read_volatile</span><span>(MboxAddress::read()) == request }
+</span><span>}
+</span></code></pre>
+<p>The names are quite descriptive but let's talk about each one briefly:</p>
+<ol>
+<li><code>fn is_mbox_full()</code> uses the <code>MBOX_FULL</code> to check the status address of the mailbox. Returns <code>true</code> when the mailbox is ready to process another request.</li>
+<li><code>fn is_mbox_empty()</code> uses the <code>MBOX_EMPTY</code> and returns true if we are still waiting for a response from the mailbox.</li>
+<li><code>fn write_mbox_request()</code> is used to tell the VideoCore the memory location where it can find our mailbox buffer.</li>
+<li><code>fn does_mbox_response_match()</code> compares the request with the response header to make sure we are reading the right data for each request.</li>
+</ol>
+<h3 id="why-so-much-unsafety">Why so much unsafety?</h3>
+<p>If you are uncomfortable with the word <code>unsafe</code> showing up in your code you are going to have to get past that because if you want to do any real low level work, you need to be willing to get your hands dirty. Worry not, we isolate them properly so that we can easily debug any seg faults arising from our use of unsafe.</p>
+<p>We just implemented an interface for interacting with the mailbox now we need to actually send requests using this interface.</p>
+<h2 id="can-i-get-a-frame-buffer">Can I get a frame buffer?</h2>
+<p>In Raspberry Pi, the screen is driven by memory mapped IO which means each pixel on the display is directly mapped to a memory location in the VideoCore processor. In order to instruct the VideoCore to allocate memory for the screen aka the frame buffer, we need to make a call to the mailbox specifying the parameters of our display which include but is not limited to: virtual screen size, physical screen size, pitch, depth, bits per pixel, pixel order, etc. After we provide all this in our request and send it, then the frame buffer will be returned in the mailbox response and we can now write to it each time we want to draw to the screen.</p>
+<p>Before we start implementing our code for requesting the frame buffer let's set up the foundation with some helper utilities!</p>
+<p>Create a new file <code>src/color.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Color {
+</span><span>    </span><span style="color:#bf616a;">r</span><span>: </span><span style="color:#b48ead;">u8</span><span>,
+</span><span>    </span><span style="color:#bf616a;">g</span><span>: </span><span style="color:#b48ead;">u8</span><span>,
+</span><span>    </span><span style="color:#bf616a;">b</span><span>: </span><span style="color:#b48ead;">u8</span><span>,
+</span><span>    </span><span style="color:#bf616a;">a</span><span>: </span><span style="color:#b48ead;">u8</span><span>,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>Color {
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">from_rgb</span><span>(</span><span style="color:#bf616a;">r</span><span>: </span><span style="color:#b48ead;">u8</span><span>, </span><span style="color:#bf616a;">g</span><span>: </span><span style="color:#b48ead;">u8</span><span>, </span><span style="color:#bf616a;">b</span><span>: </span><span style="color:#b48ead;">u8</span><span>) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">Self</span><span>::from_rgba(r, g, b, </span><span style="color:#b48ead;">u8</span><span>::</span><span style="color:#d08770;">MAX</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">from_rgba</span><span>(</span><span style="color:#bf616a;">r</span><span>: </span><span style="color:#b48ead;">u8</span><span>, </span><span style="color:#bf616a;">g</span><span>: </span><span style="color:#b48ead;">u8</span><span>, </span><span style="color:#bf616a;">b</span><span>: </span><span style="color:#b48ead;">u8</span><span>, </span><span style="color:#bf616a;">a</span><span>: </span><span style="color:#b48ead;">u8</span><span>) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">Self </span><span>{ r, g, b, a }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">red</span><span>() -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">Self</span><span>::from_rgb(</span><span style="color:#d08770;">0xFF</span><span>, </span><span style="color:#d08770;">0</span><span>, </span><span style="color:#d08770;">0</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">green</span><span>() -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">Self</span><span>::from_rgb(</span><span style="color:#d08770;">0</span><span>, </span><span style="color:#d08770;">0xFF</span><span>, </span><span style="color:#d08770;">0</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">blue</span><span>() -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">Self</span><span>::from_rgb(</span><span style="color:#d08770;">0</span><span>, </span><span style="color:#d08770;">0</span><span>, </span><span style="color:#d08770;">0xFF</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">black</span><span>() -&gt; Color {
+</span><span>        </span><span style="color:#b48ead;">Self</span><span>::from_rgb(</span><span style="color:#d08770;">0</span><span>, </span><span style="color:#d08770;">0</span><span>, </span><span style="color:#d08770;">0</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">white</span><span>() -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">Self</span><span>::from_rgb(</span><span style="color:#d08770;">0xFF</span><span>, </span><span style="color:#d08770;">0xFF</span><span>, </span><span style="color:#d08770;">0xFF</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">to_rgb565</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; </span><span style="color:#b48ead;">u16 </span><span>{
+</span><span>        </span><span style="color:#b48ead;">let</span><span> r = (</span><span style="color:#bf616a;">self</span><span>.r as </span><span style="color:#b48ead;">u16 </span><span>&gt;&gt; </span><span style="color:#d08770;">3</span><span>) &amp; </span><span style="color:#d08770;">0x1F</span><span>;
+</span><span>        </span><span style="color:#b48ead;">let</span><span> g = (</span><span style="color:#bf616a;">self</span><span>.g as </span><span style="color:#b48ead;">u16 </span><span>&gt;&gt; </span><span style="color:#d08770;">2</span><span>) &amp; </span><span style="color:#d08770;">0x3F</span><span>;
+</span><span>        </span><span style="color:#b48ead;">let</span><span> b = (</span><span style="color:#bf616a;">self</span><span>.b as </span><span style="color:#b48ead;">u16 </span><span>&gt;&gt; </span><span style="color:#d08770;">3</span><span>) &amp; </span><span style="color:#d08770;">0x1F</span><span>;
+</span><span>        (r &lt;&lt; </span><span style="color:#d08770;">11</span><span>) | (g &lt;&lt; </span><span style="color:#d08770;">5</span><span>) | b
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">to_rgb</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; </span><span style="color:#b48ead;">u32 </span><span>{
+</span><span>        #[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">ltr-rgb</span><span>&quot;)]
+</span><span>        </span><span style="color:#b48ead;">return u32</span><span>::from_le_bytes([</span><span style="color:#bf616a;">self</span><span>.r, </span><span style="color:#bf616a;">self</span><span>.g, </span><span style="color:#bf616a;">self</span><span>.b, </span><span style="color:#bf616a;">self</span><span>.a]);
+</span><span>
+</span><span>        #[</span><span style="color:#bf616a;">cfg</span><span>(</span><span style="color:#bf616a;">not</span><span>(feature = &quot;</span><span style="color:#a3be8c;">ltr-rgb</span><span>&quot;))]
+</span><span>        </span><span style="color:#b48ead;">return u32</span><span>::from_le_bytes([</span><span style="color:#bf616a;">self</span><span>.b, </span><span style="color:#bf616a;">self</span><span>.g, </span><span style="color:#bf616a;">self</span><span>.r, </span><span style="color:#bf616a;">self</span><span>.a]);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>From&lt;&amp;Color&gt; </span><span style="color:#b48ead;">for </span><span>u32 {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">from</span><span>(</span><span style="color:#bf616a;">value</span><span>: &amp;Color) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        value.</span><span style="color:#96b5b4;">to_rgb</span><span>()
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>From&lt;&amp;Color&gt; </span><span style="color:#b48ead;">for </span><span>u16 {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">from</span><span>(</span><span style="color:#bf616a;">value</span><span>: &amp;Color) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        value.</span><span style="color:#96b5b4;">to_rgb565</span><span>()
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>This code is self explanatory. Just a basic color utility for when we want to print to screen. We have options for regular <code>rgb</code> and <code>rgb565</code> which is for 16 bit color mode.</p>
+<p>Add the module to <code>src/main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>color;
+</span></code></pre>
+<p>Create a new file <code>src/geometry.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Point(</span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#b48ead;">i32</span><span>);
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>Point {
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">new</span><span>(</span><span style="color:#bf616a;">x</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">y</span><span>: </span><span style="color:#b48ead;">i32</span><span>) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        Point(x, y)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">xy</span><span>(</span><span style="color:#bf616a;">xy</span><span>: </span><span style="color:#b48ead;">i32</span><span>) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">Self</span><span>::new(xy, xy)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">x</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; </span><span style="color:#b48ead;">i32 </span><span>{
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#d08770;">0
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">y</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; </span><span style="color:#b48ead;">i32 </span><span>{
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#d08770;">1
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Simple code also, stores geometry information of a point. Add the module to <code>src/main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>geometry;
+</span></code></pre>
+<p>We are still setting up the foundation. Go ahead and create a new file <code>src/motherboards/display.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use crate</span><span>::color;
+</span><span style="color:#b48ead;">use crate</span><span>::geometry;
+</span><span style="color:#b48ead;">use crate</span><span>::types::KernelResult;
+</span><span>
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">display_buffer</span><span>() -&gt; KernelResult&lt;impl DisplayBuffer&gt; {
+</span><span>    unimplemented!()
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub trait </span><span>DisplayBuffer {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">clear</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">color</span><span>: &amp;color::Color);
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">draw_rect</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">p1</span><span>: geometry::Point, </span><span style="color:#bf616a;">p2</span><span>: geometry::Point, </span><span style="color:#bf616a;">color</span><span>: &amp;color::Color);
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">draw_triangle</span><span>(
+</span><span>        &amp;</span><span style="color:#bf616a;">self</span><span>,
+</span><span>        </span><span style="color:#bf616a;">p0</span><span>: geometry::Point,
+</span><span>        </span><span style="color:#bf616a;">p1</span><span>: geometry::Point,
+</span><span>        </span><span style="color:#bf616a;">p2</span><span>: geometry::Point,
+</span><span>        </span><span style="color:#bf616a;">color</span><span>: &amp;color::Color,
+</span><span>    );
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">debug</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>);
+</span><span>}
+</span></code></pre>
+<p>Add the module to <code>src/motherboards/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub mod </span><span>display;
+</span></code></pre>
+<p>Create another file <code>src/types.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub enum </span><span>KernelError {
+</span><span>    BufferInitError,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub type </span><span>KernelResult&lt;T&gt; = Result&lt;T, KernelError&gt;;
+</span></code></pre>
+<p>Add the module to <code>src/main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">mod </span><span>types;
+</span></code></pre>
+<p>Create another file <code>src/motherboards/raspberrypi/hdmi.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use super</span><span>::mailbox::{mbox_call, mbox_get, mbox_set};
+</span><span>
+</span><span style="color:#b48ead;">use crate</span><span>::color::Color;
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">device</span><span>&quot;)]
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">PHYSICAL_WIDTH</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">3440</span><span>;
+</span><span>#[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">device</span><span>&quot;)]
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">PHYSICAL_HEIGHT</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">1440</span><span>;
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">emulator</span><span>&quot;)]
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">PHYSICAL_WIDTH</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">1500</span><span>;
+</span><span>#[</span><span style="color:#bf616a;">cfg</span><span>(feature = &quot;</span><span style="color:#a3be8c;">emulator</span><span>&quot;)]
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">PHYSICAL_HEIGHT</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">900</span><span>;
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_REQUEST</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_CH_PROP</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">8</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">MBOX_TAG_LAST</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0</span><span>;
+</span><span>
+</span><span style="color:#b48ead;">struct </span><span>FrameConfig {
+</span><span>    </span><span style="color:#bf616a;">buffer</span><span>: </span><span style="color:#b48ead;">usize</span><span>,
+</span><span>    </span><span style="color:#bf616a;">size</span><span>: </span><span style="color:#b48ead;">usize</span><span>,
+</span><span>    </span><span style="color:#bf616a;">width</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>    </span><span style="color:#bf616a;">height</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>    </span><span style="color:#bf616a;">pitch</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>    </span><span style="color:#bf616a;">depth</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>    </span><span style="color:#bf616a;">bits_per_pixel</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>    </span><span style="color:#bf616a;">is_rgb</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>FrameConfig {
+</span><span>    </span><span style="color:#b48ead;">const fn </span><span style="color:#8fa1b3;">new</span><span>() -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        FrameConfig {
+</span><span>            buffer: </span><span style="color:#d08770;">0</span><span>,
+</span><span>            size: </span><span style="color:#d08770;">0</span><span>,
+</span><span>            width: </span><span style="color:#d08770;">0</span><span>,
+</span><span>            height: </span><span style="color:#d08770;">0</span><span>,
+</span><span>            pitch: </span><span style="color:#d08770;">0</span><span>,
+</span><span>            depth: </span><span style="color:#d08770;">0</span><span>,
+</span><span>            bits_per_pixel: </span><span style="color:#d08770;">4</span><span>,
+</span><span>            is_rgb: </span><span style="color:#d08770;">0</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">static mut </span><span style="color:#d08770;">FRAME_CONFIG</span><span>: FrameConfig = FrameConfig::new();
+</span><span>
+</span><span style="color:#b48ead;">pub struct </span><span>ScreenDimensions {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">height</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">width</span><span>: </span><span style="color:#b48ead;">u32</span><span>,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">get_screen_dimensions</span><span>() -&gt; ScreenDimensions {
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>        ScreenDimensions {
+</span><span>            width: </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.width,
+</span><span>            height: </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.height,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">PHYSICAL_SIZE_TAG</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x0004_8003</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">VIRTUAL_SIZE_TAG</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x0004_8004</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">VIRTUAL_OFFSET_TAG</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x0004_8009</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">DEPTH_TAG</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x0004_8005</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">PIXEL_ORDER_TAG</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x0004_8006</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">FRAME_BUFFER_TAG</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x0004_0001</span><span>;
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">PITCH_TAG</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">0x0004_0008</span><span>;
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">init_buffer</span><span>() -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#d08770;">BUFFER_SIZE</span><span>: </span><span style="color:#b48ead;">u32 </span><span>= </span><span style="color:#d08770;">35 </span><span>* </span><span style="color:#d08770;">4</span><span>;
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">0</span><span>, </span><span style="color:#d08770;">BUFFER_SIZE</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">MBOX_REQUEST</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">2</span><span>, </span><span style="color:#d08770;">PHYSICAL_SIZE_TAG</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">3</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">4</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">5</span><span>, </span><span style="color:#d08770;">PHYSICAL_WIDTH</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">6</span><span>, </span><span style="color:#d08770;">PHYSICAL_HEIGHT</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">7</span><span>, </span><span style="color:#d08770;">VIRTUAL_SIZE_TAG</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">8</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">9</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">10</span><span>, </span><span style="color:#d08770;">PHYSICAL_WIDTH</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">11</span><span>, </span><span style="color:#d08770;">PHYSICAL_HEIGHT</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">12</span><span>, </span><span style="color:#d08770;">VIRTUAL_OFFSET_TAG</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">13</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">14</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">15</span><span>, </span><span style="color:#d08770;">0</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">16</span><span>, </span><span style="color:#d08770;">0</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">17</span><span>, </span><span style="color:#d08770;">DEPTH_TAG</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">18</span><span>, </span><span style="color:#d08770;">4</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">19</span><span>, </span><span style="color:#d08770;">4</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">20</span><span>, </span><span style="color:#d08770;">32</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">21</span><span>, </span><span style="color:#d08770;">PIXEL_ORDER_TAG</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">22</span><span>, </span><span style="color:#d08770;">4</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">23</span><span>, </span><span style="color:#d08770;">4</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">24</span><span>, </span><span style="color:#d08770;">1</span><span>); </span><span style="color:#65737e;">// 1 = RGB
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">25</span><span>, </span><span style="color:#d08770;">FRAME_BUFFER_TAG</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">26</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">27</span><span>, </span><span style="color:#d08770;">8</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">28</span><span>, </span><span style="color:#d08770;">4096</span><span>); </span><span style="color:#65737e;">// request 4096-byte alignment; returns frame buffer ptr here
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">29</span><span>, </span><span style="color:#d08770;">0</span><span>); </span><span style="color:#65737e;">//    returns size here
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">30</span><span>, </span><span style="color:#d08770;">PITCH_TAG</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">31</span><span>, </span><span style="color:#d08770;">4</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">32</span><span>, </span><span style="color:#d08770;">4</span><span>);
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">33</span><span>, </span><span style="color:#d08770;">0</span><span>); </span><span style="color:#65737e;">// returns pitch here
+</span><span>
+</span><span>    </span><span style="color:#96b5b4;">mbox_set</span><span>(</span><span style="color:#d08770;">34</span><span>, </span><span style="color:#d08770;">MBOX_TAG_LAST</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">if </span><span style="color:#96b5b4;">mbox_call</span><span>(</span><span style="color:#d08770;">MBOX_CH_PROP</span><span>) &amp;&amp; </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">20</span><span>) == </span><span style="color:#d08770;">32 </span><span>&amp;&amp; </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">28</span><span>) != </span><span style="color:#d08770;">0 </span><span>{
+</span><span>        </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>            </span><span style="color:#65737e;">// Convert the GPU bus address to an ARM physical address and store the buffer
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.buffer = (</span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">28</span><span>) &amp; </span><span style="color:#d08770;">0x3FFF_FFFF</span><span>) as </span><span style="color:#b48ead;">usize</span><span>;
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.size = </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">29</span><span>) as </span><span style="color:#b48ead;">usize</span><span>;
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.width = </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">5</span><span>);
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.height = </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">6</span><span>);
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.pitch = </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">33</span><span>);
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.depth = </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">20</span><span>);
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.bits_per_pixel = </span><span style="color:#b48ead;">if </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.width != </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.pitch / </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.width
+</span><span>            } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>                </span><span style="color:#d08770;">4
+</span><span>            };
+</span><span>            </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.is_rgb = </span><span style="color:#96b5b4;">mbox_get</span><span>(</span><span style="color:#d08770;">24</span><span>);
+</span><span>        }
+</span><span>        </span><span style="color:#d08770;">true
+</span><span>    } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>        </span><span style="color:#d08770;">false
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">clear</span><span>(</span><span style="color:#bf616a;">color</span><span>: &amp;Color) {
+</span><span>    </span><span style="color:#b48ead;">let </span><span>(base, size) = </span><span style="color:#b48ead;">unsafe </span><span>{ (</span><span style="color:#d08770;">FRAME_CONFIG</span><span>.buffer, </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.size) };
+</span><span>    </span><span style="color:#b48ead;">if</span><span> base == </span><span style="color:#d08770;">0 </span><span>|| size == </span><span style="color:#d08770;">0 </span><span>{
+</span><span>        </span><span style="color:#b48ead;">return</span><span>;
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> i in </span><span style="color:#d08770;">0</span><span>..size / </span><span style="color:#d08770;">4 </span><span>{
+</span><span>        </span><span style="color:#96b5b4;">write_color</span><span>(base + i * </span><span style="color:#d08770;">4</span><span>, color);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// Write a color to a single pixel, honoring the framebuffer&#39;s bits-per-pixel.
+</span><span style="color:#65737e;">/// Coordinates outside the screen (including negative) are silently dropped.
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">draw_pixel</span><span>(</span><span style="color:#bf616a;">x</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">y</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">color</span><span>: &amp;Color) {
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.buffer == </span><span style="color:#d08770;">0
+</span><span>            || x &lt; </span><span style="color:#d08770;">0
+</span><span>            || y &lt; </span><span style="color:#d08770;">0
+</span><span>            || (x as </span><span style="color:#b48ead;">u32</span><span>) &gt;= </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.width
+</span><span>            || (y as </span><span style="color:#b48ead;">u32</span><span>) &gt;= </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.height
+</span><span>        {
+</span><span>            </span><span style="color:#b48ead;">return</span><span>;
+</span><span>        }
+</span><span>        </span><span style="color:#b48ead;">let</span><span> x = x as </span><span style="color:#b48ead;">u32</span><span>;
+</span><span>        </span><span style="color:#b48ead;">let</span><span> y = y as </span><span style="color:#b48ead;">u32</span><span>;
+</span><span>        </span><span style="color:#b48ead;">let</span><span> addr = </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.buffer
+</span><span>            + (y * </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.pitch + x * </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.bits_per_pixel) as </span><span style="color:#b48ead;">usize</span><span>;
+</span><span>        </span><span style="color:#96b5b4;">write_color</span><span>(addr, color);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// Fill a solid rectangle with the given color. The rect is clipped to the
+</span><span style="color:#65737e;">/// screen, so off-screen (including negative) corners are fine.
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">draw_rect</span><span>(</span><span style="color:#bf616a;">x1</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">y1</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">x2</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">y2</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">color</span><span>: &amp;Color) {
+</span><span>    </span><span style="color:#b48ead;">let </span><span>(w, h) = </span><span style="color:#b48ead;">unsafe </span><span>{ (</span><span style="color:#d08770;">FRAME_CONFIG</span><span>.width as </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.height as </span><span style="color:#b48ead;">i32</span><span>) };
+</span><span>    </span><span style="color:#b48ead;">let</span><span> xa = x1.</span><span style="color:#96b5b4;">min</span><span>(x2).</span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#d08770;">0</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> xb = x1.</span><span style="color:#96b5b4;">max</span><span>(x2).</span><span style="color:#96b5b4;">min</span><span>(w - </span><span style="color:#d08770;">1</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> ya = y1.</span><span style="color:#96b5b4;">min</span><span>(y2).</span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#d08770;">0</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> yb = y1.</span><span style="color:#96b5b4;">max</span><span>(y2).</span><span style="color:#96b5b4;">min</span><span>(h - </span><span style="color:#d08770;">1</span><span>);
+</span><span>    </span><span style="color:#b48ead;">if</span><span> xa &gt; xb || ya &gt; yb {
+</span><span>        </span><span style="color:#b48ead;">return</span><span>; </span><span style="color:#65737e;">// fully off-screen
+</span><span>    }
+</span><span>    </span><span style="color:#b48ead;">for</span><span> y in ya..=yb {
+</span><span>        </span><span style="color:#b48ead;">for</span><span> x in xa..=xb {
+</span><span>            </span><span style="color:#96b5b4;">draw_pixel</span><span>(x, y, color);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// Signed area of the triangle (a, b, p); sign tells which side of edge a-&gt;b p is on.
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">edge</span><span>(</span><span style="color:#bf616a;">ax</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">ay</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">bx</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">by</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">px</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">py</span><span>: </span><span style="color:#b48ead;">i32</span><span>) -&gt; </span><span style="color:#b48ead;">i32 </span><span>{
+</span><span>    (px - ax) * (by - ay) - (py - ay) * (bx - ax)
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// Fill a triangle given by three vertices, using half-space rasterization.
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">draw_triangle</span><span>(</span><span style="color:#bf616a;">x0</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">y0</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">x1</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">y1</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">x2</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">y2</span><span>: </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#bf616a;">color</span><span>: &amp;Color) {
+</span><span>    </span><span style="color:#b48ead;">let </span><span>(w, h) = </span><span style="color:#b48ead;">unsafe </span><span>{ (</span><span style="color:#d08770;">FRAME_CONFIG</span><span>.width as </span><span style="color:#b48ead;">i32</span><span>, </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.height as </span><span style="color:#b48ead;">i32</span><span>) };
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// Bounding box of the triangle, clamped to the screen.
+</span><span>    </span><span style="color:#b48ead;">let</span><span> min_x = x0.</span><span style="color:#96b5b4;">min</span><span>(x1).</span><span style="color:#96b5b4;">min</span><span>(x2).</span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#d08770;">0</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> min_y = y0.</span><span style="color:#96b5b4;">min</span><span>(y1).</span><span style="color:#96b5b4;">min</span><span>(y2).</span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#d08770;">0</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> max_x = x0.</span><span style="color:#96b5b4;">max</span><span>(x1).</span><span style="color:#96b5b4;">max</span><span>(x2).</span><span style="color:#96b5b4;">min</span><span>(w - </span><span style="color:#d08770;">1</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> max_y = y0.</span><span style="color:#96b5b4;">max</span><span>(y1).</span><span style="color:#96b5b4;">max</span><span>(y2).</span><span style="color:#96b5b4;">min</span><span>(h - </span><span style="color:#d08770;">1</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// Orientation of the whole triangle; a point is inside when all three edge
+</span><span>    </span><span style="color:#65737e;">// functions share this sign (covers both clockwise and counter-clockwise).
+</span><span>    </span><span style="color:#b48ead;">let</span><span> area = </span><span style="color:#96b5b4;">edge</span><span>(x0, y0, x1, y1, x2, y2);
+</span><span>    </span><span style="color:#b48ead;">if</span><span> area == </span><span style="color:#d08770;">0 </span><span>{
+</span><span>        </span><span style="color:#b48ead;">return</span><span>;
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> y in min_y..=max_y {
+</span><span>        </span><span style="color:#b48ead;">for</span><span> x in min_x..=max_x {
+</span><span>            </span><span style="color:#b48ead;">let</span><span> w0 = </span><span style="color:#96b5b4;">edge</span><span>(x1, y1, x2, y2, x, y);
+</span><span>            </span><span style="color:#b48ead;">let</span><span> w1 = </span><span style="color:#96b5b4;">edge</span><span>(x2, y2, x0, y0, x, y);
+</span><span>            </span><span style="color:#b48ead;">let</span><span> w2 = </span><span style="color:#96b5b4;">edge</span><span>(x0, y0, x1, y1, x, y);
+</span><span>            </span><span style="color:#b48ead;">let</span><span> inside = </span><span style="color:#b48ead;">if</span><span> area &gt; </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                w0 &gt;= </span><span style="color:#d08770;">0 </span><span>&amp;&amp; w1 &gt;= </span><span style="color:#d08770;">0 </span><span>&amp;&amp; w2 &gt;= </span><span style="color:#d08770;">0
+</span><span>            } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>                w0 &lt;= </span><span style="color:#d08770;">0 </span><span>&amp;&amp; w1 &lt;= </span><span style="color:#d08770;">0 </span><span>&amp;&amp; w2 &lt;= </span><span style="color:#d08770;">0
+</span><span>            };
+</span><span>            </span><span style="color:#b48ead;">if</span><span> inside {
+</span><span>                </span><span style="color:#96b5b4;">draw_pixel</span><span>(x, y, color);
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">glyph</span><span>(</span><span style="color:#bf616a;">c</span><span>: </span><span style="color:#b48ead;">u8</span><span>) -&gt; [</span><span style="color:#b48ead;">u8</span><span>; </span><span style="color:#d08770;">8</span><span>] {
+</span><span>    </span><span style="color:#b48ead;">match</span><span> c {
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">0</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x98</span><span>, </span><span style="color:#d08770;">0xA8</span><span>, </span><span style="color:#d08770;">0xC8</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">1</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x60</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">2</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x40</span><span>, </span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">3</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x30</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">4</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x30</span><span>, </span><span style="color:#d08770;">0x50</span><span>, </span><span style="color:#d08770;">0x90</span><span>, </span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">5</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">6</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x30</span><span>, </span><span style="color:#d08770;">0x40</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">7</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x40</span><span>, </span><span style="color:#d08770;">0x40</span><span>, </span><span style="color:#d08770;">0x40</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">8</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">9</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x78</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x60</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">A</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">B</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">C</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">D</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">E</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">F</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">G</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xB8</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">H</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">I</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">J</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x38</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x90</span><span>, </span><span style="color:#d08770;">0x90</span><span>, </span><span style="color:#d08770;">0x60</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">K</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x90</span><span>, </span><span style="color:#d08770;">0xA0</span><span>, </span><span style="color:#d08770;">0xC0</span><span>, </span><span style="color:#d08770;">0xA0</span><span>, </span><span style="color:#d08770;">0x90</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">L</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">M</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xD8</span><span>, </span><span style="color:#d08770;">0xA8</span><span>, </span><span style="color:#d08770;">0xA8</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">N</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xC8</span><span>, </span><span style="color:#d08770;">0xA8</span><span>, </span><span style="color:#d08770;">0x98</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">O</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">P</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">Q</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xA8</span><span>, </span><span style="color:#d08770;">0x90</span><span>, </span><span style="color:#d08770;">0x68</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">R</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xF0</span><span>, </span><span style="color:#d08770;">0xA0</span><span>, </span><span style="color:#d08770;">0x90</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">S</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">T</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">U</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x70</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">V</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x50</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">W</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0xA8</span><span>, </span><span style="color:#d08770;">0xA8</span><span>, </span><span style="color:#d08770;">0xD8</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">X</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x50</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x50</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">Y</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x88</span><span>, </span><span style="color:#d08770;">0x50</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">Z</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x08</span><span>, </span><span style="color:#d08770;">0x10</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x40</span><span>, </span><span style="color:#d08770;">0x80</span><span>, </span><span style="color:#d08770;">0xF8</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        </span><span style="color:#b48ead;">b</span><span>&#39;</span><span style="color:#a3be8c;">:</span><span>&#39; =&gt; [</span><span style="color:#d08770;">0x00</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x00</span><span>, </span><span style="color:#d08770;">0x00</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x20</span><span>, </span><span style="color:#d08770;">0x00</span><span>],
+</span><span>        _ =&gt; [</span><span style="color:#d08770;">0x00</span><span>; </span><span style="color:#d08770;">8</span><span>],
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">/// Draw a text glyph to the screen based on a bitmap
+</span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">draw_char</span><span>(</span><span style="color:#bf616a;">c</span><span>: </span><span style="color:#b48ead;">u8</span><span>, </span><span style="color:#bf616a;">px</span><span>: </span><span style="color:#b48ead;">u32</span><span>, </span><span style="color:#bf616a;">py</span><span>: </span><span style="color:#b48ead;">u32</span><span>, </span><span style="color:#bf616a;">scale</span><span>: </span><span style="color:#b48ead;">u32</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> g = </span><span style="color:#96b5b4;">glyph</span><span>(c);
+</span><span>    </span><span style="color:#b48ead;">for</span><span> row in </span><span style="color:#d08770;">0</span><span>..</span><span style="color:#d08770;">8</span><span style="color:#b48ead;">u32 </span><span>{
+</span><span>        </span><span style="color:#b48ead;">let</span><span> bits = g[row as </span><span style="color:#b48ead;">usize</span><span>];
+</span><span>        </span><span style="color:#b48ead;">for</span><span> col in </span><span style="color:#d08770;">0</span><span>..</span><span style="color:#d08770;">8</span><span style="color:#b48ead;">u32 </span><span>{
+</span><span>            </span><span style="color:#b48ead;">let</span><span> pixel_color = </span><span style="color:#b48ead;">if </span><span>(bits &gt;&gt; (</span><span style="color:#d08770;">7 </span><span>- col)) &amp; </span><span style="color:#d08770;">1 </span><span>== </span><span style="color:#d08770;">1 </span><span>{
+</span><span>                Color::white()
+</span><span>            } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>                Color::black()
+</span><span>            };
+</span><span>            </span><span style="color:#b48ead;">for</span><span> sy in </span><span style="color:#d08770;">0</span><span>..scale {
+</span><span>                </span><span style="color:#b48ead;">for</span><span> sx in </span><span style="color:#d08770;">0</span><span>..scale {
+</span><span>                    </span><span style="color:#96b5b4;">draw_pixel</span><span>(
+</span><span>                        (px + col * scale + sx) as </span><span style="color:#b48ead;">i32</span><span>,
+</span><span>                        (py + row * scale + sy) as </span><span style="color:#b48ead;">i32</span><span>,
+</span><span>                        &amp;pixel_color,
+</span><span>                    );
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">write_color</span><span>(</span><span style="color:#bf616a;">addr</span><span>: </span><span style="color:#b48ead;">usize</span><span>, </span><span style="color:#bf616a;">color</span><span>: &amp;Color) {
+</span><span>    </span><span style="color:#b48ead;">unsafe </span><span>{
+</span><span>        </span><span style="color:#b48ead;">if </span><span style="color:#d08770;">FRAME_CONFIG</span><span>.bits_per_pixel == </span><span style="color:#d08770;">2 </span><span>{
+</span><span>            core::ptr::write_volatile(addr as </span><span style="color:#b48ead;">*mut u16</span><span>, color.</span><span style="color:#96b5b4;">into</span><span>());
+</span><span>        } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>            core::ptr::write_volatile(addr as </span><span style="color:#b48ead;">*mut u32</span><span>, color.</span><span style="color:#96b5b4;">into</span><span>());
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>And add the module to <code>src/motherboards/raspberrypi/mod.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub mod </span><span>hdmi;
+</span></code></pre>
+<p>Now for an indepth explanation of what is going on:</p>
+</div>
+
+
+<!-- Divider -->
+<hr class="border-zinc-200 dark:border-zinc-800 my-10" />
+
+<!-- Comments -->
+<section>
+    <p
+        class="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-6"
+    >
+        Discussion
+    </p>
+    <script
+        src="https://utteranc.es/client.js"
+        repo="iambenkay/iambenkay.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async
+    ></script>
+</section>
+
+<script>
+    // Switch utterances theme with dark mode
+    function syncUtterancesTheme() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const frame = document.querySelector(".utterances-frame");
+        if (frame) {
+            frame.contentWindow.postMessage(
+                {
+                    type: "set-theme",
+                    theme: isDark ? "github-dark" : "github-light",
+                },
+                "https://utteranc.es",
+            );
+        }
+    }
+
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        setTimeout(syncUtterancesTheme, 50);
+    });
+
+    window.addEventListener("message", (e) => {
+        if (
+            e.origin === "https://utteranc.es" &&
+            e.data &&
+            e.data.type === "resize"
+        ) {
+            syncUtterancesTheme();
+        }
+    });
+
+    function loadCopyButtons() {
+        document.querySelectorAll("pre").forEach((block) => {
+            const btn = document.createElement("div");
+            btn.textContent = "Copy";
+            btn.classList.add(
+                "absolute",
+                "top-2",
+                "right-2",
+                "bg-white/10",
+                "cursor-pointer",
+                "rounded",
+                "px-2",
+                "py-0.5",
+                "text-xs",
+                "text-zinc-300",
+                "hover:bg-white/20",
+                "transition-colors",
+            );
+            block.style.position = "relative";
+            block.appendChild(btn);
+            btn.addEventListener("click", () => {
+                navigator.clipboard.writeText(
+                    block.querySelector("code").textContent.trimEnd(),
+                );
+                btn.textContent = "Copied!";
+                setTimeout(() => {
+                    btn.textContent = "Copy";
+                }, 2000);
+            });
+        });
+    }
+
+    loadCopyButtons();
+</script>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-zinc-200 dark:border-zinc-800 mt-16">
+            <div
+                class="max-w-3xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-end gap-2 text-sm text-zinc-500 dark:text-zinc-500"
+            >
+                <span>© 2026 Benjamin Chibuzor-Orie</span>
+            </div>
+        </footer>
+
+        <script>
+            // Dark mode toggle
+            const html = document.documentElement;
+            const toggle = document.getElementById("theme-toggle");
+            const sun = document.getElementById("icon-sun");
+            const moon = document.getElementById("icon-moon");
+
+            function applyTheme(dark) {
+                html.classList.toggle("dark", dark);
+                sun.classList.toggle("hidden", !dark);
+                moon.classList.toggle("hidden", dark);
+            }
+
+            const stored = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia(
+                "(prefers-color-scheme: dark)",
+            ).matches;
+            applyTheme(stored === "dark" || (!stored && prefersDark));
+
+            toggle.addEventListener("click", () => {
+                const isDark = html.classList.contains("dark");
+                applyTheme(!isDark);
+                localStorage.setItem("theme", isDark ? "light" : "dark");
+            });
+        </script>
+
+        <script type="module">
+            import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/+esm";
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyDbmff0_NioNCGzbRl_E_ldtXbxQIcpcJs",
+                authDomain: "benkay-blog.firebaseapp.com",
+                projectId: "benkay-blog",
+                storageBucket: "benkay-blog.firebasestorage.app",
+                messagingSenderId: "880946931838",
+                appId: "1:880946931838:web:9a0899015b0ca6eadd902f",
+                measurementId: "G-LPDNWEQSQK",
+            };
+
+            if (window.location.hostname !== "localhost") {
+                const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app);
+            }
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    </body>
+</html>

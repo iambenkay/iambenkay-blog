@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://iambenkay.com/</loc>
+    </url>
+    <url>
+        <loc>https://iambenkay.com/building-an-operating-system-in-rust-part-1/</loc>
+        <lastmod>2026-06-18</lastmod>
+    </url>
+    <url>
+        <loc>https://iambenkay.com/building-an-operating-system-in-rust-part-2/</loc>
+        <lastmod>2026-06-19</lastmod>
+    </url>
+    <url>
+        <loc>https://iambenkay.com/building-an-operating-system-in-rust-part-3/</loc>
+        <lastmod>2026-06-20</lastmod>
+    </url>
+    <url>
+        <loc>https://iambenkay.com/rust-features-that-make-programming-fun-again/</loc>
+        <lastmod>2025-12-11</lastmod>
+    </url>
+    <url>
+        <loc>https://iambenkay.com/series/</loc>
+    </url>
+    <url>
+        <loc>https://iambenkay.com/series/building-an-operating-system-in-rust/</loc>
+    </url>
+    <url>
+        <loc>https://iambenkay.com/upgrade-from-mongo-7-x-to-8-0/</loc>
+        <lastmod>2025-12-07</lastmod>
+    </url>
+</urlset>

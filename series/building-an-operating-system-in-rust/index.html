@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en" class="">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>
+    Building an Operating System in Rust — Benjamin Chibuzor-Orie</title
+>
+        <link href="/markdown.css" rel="stylesheet" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+            };
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,600;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "Inter", sans-serif;
+            }
+            .font-serif {
+                font-family: "Lora", serif;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-200"
+    >
+        <!-- Nav -->
+        <header
+            class="border-b border-zinc-200 dark:border-zinc-800 bg-stone-50/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10"
+        >
+            <div
+                class="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between"
+            >
+                <a href="/" class="flex items-center gap-2.5 group min-w-0">
+                    <div
+                        class="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shrink-0"
+                    >
+                        B
+                    </div>
+                    <span
+                        class="font-semibold text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors truncate"
+                        >Benjamin Chibuzor-Orie</span
+                    >
+                </a>
+                <button
+                    id="theme-toggle"
+                    aria-label="Toggle dark mode"
+                    class="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg
+                        id="icon-sun"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="hidden w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z"
+                        />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg
+                        id="icon-moon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
+                        />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto px-6 py-10">
+            
+
+<a
+    href="/"
+    class="inline-flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mb-8"
+>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+    >
+        <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M7 16l-4-4m0 0l4-4m-4 4h18"
+        />
+    </svg>
+    Home
+</a>
+
+<p class="text-xs font-semibold uppercase tracking-widest text-rose-500 mb-3">
+    Series · 3 parts
+</p>
+<h1
+    class="text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight mb-10"
+>
+    Building an Operating System in Rust
+</h1>
+
+<ol class="flex flex-col gap-4">
+    
+    <li>
+        <a
+            href="https:&#x2F;&#x2F;iambenkay.com&#x2F;building-an-operating-system-in-rust-part-1&#x2F;"
+            class="group flex gap-4 sm:gap-6 items-start rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800 transition-colors p-4 sm:p-5 shadow-sm"
+        >
+            <span
+                class="text-2xl font-extrabold text-zinc-200 dark:text-zinc-700 shrink-0 w-8 text-center leading-tight mt-0.5"
+                >1</span
+            >
+            <div class="min-w-0 flex-1">
+                <div
+                    class="flex flex-wrap items-center gap-x-2 text-xs text-zinc-400 dark:text-zinc-500 mb-1"
+                >
+                    
+                    <time>June 18, 2026</time>
+                     
+                    <span>·</span>
+                    <span
+                        >10 min
+                        read</span
+                    >
+                    
+                </div>
+                <h2
+                    class="text-base sm:text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors leading-snug"
+                >
+                    Building an Operating System In Rust Part 1
+                </h2>
+                <p
+                    class="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2"
+                >
+                    Building an operating system is a project I have had my eyes set on ever since I discovered free will in the realms of programming. Before now, I had done a reasonable amount of research and paid extra attention during my computer science degree and I was able to
+                </p>
+            </div>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all mt-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+            </svg>
+        </a>
+    </li>
+    
+    <li>
+        <a
+            href="https:&#x2F;&#x2F;iambenkay.com&#x2F;building-an-operating-system-in-rust-part-2&#x2F;"
+            class="group flex gap-4 sm:gap-6 items-start rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800 transition-colors p-4 sm:p-5 shadow-sm"
+        >
+            <span
+                class="text-2xl font-extrabold text-zinc-200 dark:text-zinc-700 shrink-0 w-8 text-center leading-tight mt-0.5"
+                >2</span
+            >
+            <div class="min-w-0 flex-1">
+                <div
+                    class="flex flex-wrap items-center gap-x-2 text-xs text-zinc-400 dark:text-zinc-500 mb-1"
+                >
+                    
+                    <time>June 19, 2026</time>
+                     
+                    <span>·</span>
+                    <span
+                        >16 min
+                        read</span
+                    >
+                    
+                </div>
+                <h2
+                    class="text-base sm:text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors leading-snug"
+                >
+                    Building an Operating System In Rust Part 2
+                </h2>
+                <p
+                    class="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2"
+                >
+                    When running programs on an existing operating system, there are a lot of things that are handled under the hood for us by the operating system. They are invisible to us and we take them for granted, we expect them to just work. In kernel space there are no training wheels
+                </p>
+            </div>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all mt-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+            </svg>
+        </a>
+    </li>
+    
+    <li>
+        <a
+            href="https:&#x2F;&#x2F;iambenkay.com&#x2F;building-an-operating-system-in-rust-part-3&#x2F;"
+            class="group flex gap-4 sm:gap-6 items-start rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800 transition-colors p-4 sm:p-5 shadow-sm"
+        >
+            <span
+                class="text-2xl font-extrabold text-zinc-200 dark:text-zinc-700 shrink-0 w-8 text-center leading-tight mt-0.5"
+                >3</span
+            >
+            <div class="min-w-0 flex-1">
+                <div
+                    class="flex flex-wrap items-center gap-x-2 text-xs text-zinc-400 dark:text-zinc-500 mb-1"
+                >
+                    
+                    <span>Under Construction</span>
+                     
+                </div>
+                <h2
+                    class="text-base sm:text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors leading-snug"
+                >
+                    Building an Operating System In Rust Part 3
+                </h2>
+                <p
+                    class="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2"
+                >
+                    In high level land, writing to the screen is a trivial task: you want text then just call println, you want shapes then just use a drawing library like bevy or wgpu. In kernel land, these luxuries have been stripped away. You have to earn every pixel yourself.
+                </p>
+            </div>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all mt-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+            </svg>
+        </a>
+    </li>
+    
+</ol>
+
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-zinc-200 dark:border-zinc-800 mt-16">
+            <div
+                class="max-w-3xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-end gap-2 text-sm text-zinc-500 dark:text-zinc-500"
+            >
+                <span>© 2026 Benjamin Chibuzor-Orie</span>
+            </div>
+        </footer>
+
+        <script>
+            // Dark mode toggle
+            const html = document.documentElement;
+            const toggle = document.getElementById("theme-toggle");
+            const sun = document.getElementById("icon-sun");
+            const moon = document.getElementById("icon-moon");
+
+            function applyTheme(dark) {
+                html.classList.toggle("dark", dark);
+                sun.classList.toggle("hidden", !dark);
+                moon.classList.toggle("hidden", dark);
+            }
+
+            const stored = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia(
+                "(prefers-color-scheme: dark)",
+            ).matches;
+            applyTheme(stored === "dark" || (!stored && prefersDark));
+
+            toggle.addEventListener("click", () => {
+                const isDark = html.classList.contains("dark");
+                applyTheme(!isDark);
+                localStorage.setItem("theme", isDark ? "light" : "dark");
+            });
+        </script>
+
+        <script type="module">
+            import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/+esm";
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyDbmff0_NioNCGzbRl_E_ldtXbxQIcpcJs",
+                authDomain: "benkay-blog.firebaseapp.com",
+                projectId: "benkay-blog",
+                storageBucket: "benkay-blog.firebasestorage.app",
+                messagingSenderId: "880946931838",
+                appId: "1:880946931838:web:9a0899015b0ca6eadd902f",
+                measurementId: "G-LPDNWEQSQK",
+            };
+
+            if (window.location.hostname !== "localhost") {
+                const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app);
+            }
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    </body>
+</html>
